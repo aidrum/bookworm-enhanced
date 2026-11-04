@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Bookworm.Desktop</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Bookworm</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+  </ItemGroup>
+  <!-- NativeAOT publish (distribution/publish_windows.bat): AOT requires trimming, so the game's own
+       assemblies and MonoGame are kept whole (as the Android Release build does), the rest trimmed. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="All" />
+    <TrimmerRootAssembly Include="BookwormGame" RootMode="All" />
+    <TrimmerRootAssembly Include="SexyFramework" RootMode="All" />
+    <TrimmerRootAssembly Include="MonoGame.Framework" RootMode="All" />
+    <TrimmerRootAssembly Include="NVorbis" RootMode="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bookworm\Bookworm.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Converted game assets (tools/convert_assets.py), loaded as raw files at run time. All four
+         resource sets ship; the game picks one from the screen. -->
+    <Content Include="..\Bookworm\Content\**\*" LinkBase="Content" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\alsoft.ini" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

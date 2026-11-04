@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Bookworm.Android/Bookworm.Android.csproj" />
+  <Project Path="Bookworm.Desktop/Bookworm.Desktop.csproj" />
+  <Project Path="Bookworm/Bookworm.csproj" />
+  <Project Path="SexyFramework/SexyFramework.csproj" />
+</Solution>

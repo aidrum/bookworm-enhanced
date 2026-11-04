@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Bookworm.Android</RootNamespace>
+    <AssemblyName>Bookworm</AssemblyName>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <ApplicationId>com.aidrum.bookworm</ApplicationId>
+    <ApplicationTitle>Bookworm</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+    <!-- The activity is declared in this template (portrait; the game turns it to landscape where allowed). -->
+    <AndroidManifest>AndroidManifest.xml</AndroidManifest>
+    <RuntimeIdentifiers>android-arm;android-arm64;android-x64</RuntimeIdentifiers>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <!-- Already-compressed game data (png/jpg/ogg) gains nothing from zip compression in the APK, and stored
+         assets are read in place (ApkContentSource). -->
+    <AndroidStoreUncompressedFileExtensions>.png;.jpg;.ogg</AndroidStoreUncompressedFileExtensions>
+    <!-- Local toolchain: JDK 21 (.NET Android supports 17/21) and the Android Studio SDK. -->
+    <JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' And Exists('C:\Program Files\Java\jdk-21')">C:\Program Files\Java\jdk-21</JavaSdkDirectory>
+    <AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' And Exists('$(LOCALAPPDATA)\Android\Sdk')">$(LOCALAPPDATA)\Android\Sdk</AndroidSdkDirectory>
+  </PropertyGroup>
+  <!-- Release: compile everything ahead of time (Debug runs managed code slowly, e.g. the image loading
+       loops). AOT requires trimming; partial mode plus the roots below keeps the game's own assemblies
+       whole and only trims framework libraries marked trimmable. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <TrimmerRootAssembly Include="Bookworm" RootMode="All" />
+    <TrimmerRootAssembly Include="BookwormGame" RootMode="All" />
+    <TrimmerRootAssembly Include="SexyFramework" RootMode="All" />
+    <TrimmerRootAssembly Include="MonoGame.Framework" RootMode="All" />
+    <TrimmerRootAssembly Include="NVorbis" RootMode="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.Android" Version="3.8.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bookworm\Bookworm.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Converted game assets (tools/convert_assets.py), all four resource sets, read in place from the APK
+         (see ApkContentSource); the game picks a set from the screen. -->
+    <AndroidAsset Include="..\Bookworm\Content\**\*" Link="Content\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

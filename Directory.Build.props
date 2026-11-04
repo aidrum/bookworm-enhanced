@@ -1,0 +1,12 @@
+<Project>
+  <!--
+    Bookworm is a universal app: one build carries the iPhone, iPhone Retina, iPad and iPad Retina
+    resource sets and picks one at run time from the screen, as the original does.
+  -->
+  <PropertyGroup>
+    <!-- Never glob generated files into the build. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+    <!-- The port's own version (Bookworm Enhanced). -->
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+</Project>

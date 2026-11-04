@@ -1,0 +1,11 @@
+/references
+/.re
+bin/
+obj/
+.vs/
+/decompilation
+*.user
+/app-icons
+/distribution/out/
+/tools
+.idea/

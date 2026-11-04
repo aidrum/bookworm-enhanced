@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<ResourceManifest>
+
+	<Resources id="Init">
+
+		<SetDefaults idprefix="IMAGE_" path="images" />
+		<Image id="GROUP1"						path="group1R" />
+		<Image id="GROUP2"						path="group2R" />
+		<Image id="GROUP3"						path="group3R" />
+		<Image id="GROUP4"						path="group4R" />
+		<Image id="GROUP5"						path="group5R" />
+		<Image id="GROUP6"						path="group6R" />
+        <Image id="IPAD1"                       path="ipad1" />
+        <Image id="IPAD2"                       path="ipad2" />
+
+    <SetDefaults idprefix="FONT_" path="fonts" />
+		<Font id="COOPER"						path="CooperBlack38.dat" />
+		<Font id="COOPER_OUTLINED"				path="CooperBlack38Outlined.dat" />
+		<Font id="LOCKERGNOME"					path="Lockergnome48Outlined.dat" />
+		<Font id="ARIAL_LARGE"					path="ArialNarrowBold36.dat" />
+		<Font id="ARIAL_LARGE_OUTLINED"			path="ArialNarrowBold36Outlined.dat" />
+		<Font id="ARIAL_MEDIUM"					path="ArialRounded24.dat" />
+		<Font id="ARIAL_MEDIUM_OUTLINED"		path="ArialRounded26Outlined.dat" />
+		<Font id="ARIAL_SMALL"					path="ArialBlack16.dat" />
+		<Font id="DEFINITIONS_LARGE"			path="ArialNarrow24.dat" />
+		<Font id="DEFINITIONS_MEDIUM"			path="ArialNarrow20.dat" />
+		<Font id="DEFINITIONS_SMALL"			path="ArialNarrow16.dat" />
+		<Font id="GOLDSCORE"					path="GoldScore48.dat" />
+		<Font id="GOLDSCORE_HEATED"				path="GoldScoreHeated48.dat" />
+		
+		<SetDefaults idprefix="SOUND_" path="sounds" />
+		<Sound id="SHAKE"						path="shak3r" />
+		<Sound id="BUTTON_CLICK"				path="buttonclick" />
+		<Sound id="GAME_OVER_TONE"				path="gameovertone" />
+		<Sound id="BAD"							path="bad" />
+		<Sound id="TONE_1"						path="up1" />
+		<Sound id="TONE_2"						path="up2" />
+		<Sound id="TONE_3"						path="up3" />
+		<Sound id="TONE_4"						path="up4" />
+		<Sound id="TONE_5"						path="up5" />
+		<Sound id="TONE_6"						path="up6" />
+		<Sound id="TONE_7"						path="up7" />
+		<Sound id="TONE_8"						path="up8" />
+		<Sound id="TONE_9"						path="up9" />
+		<Sound id="NEXT_SELECT"					path="nextselect" />
+		<Sound id="WORD_COMPLETE"				path="wordcomplete" />
+		<Sound id="BONUS_COMPLETE"				path="bonuscomplete" />
+		<Sound id="BUZZER"						path="buzzer" />
+		<Sound id="PIECE_HIT"					path="piece_hit" />
+		<Sound id="CHOMP"						path="chomp" />
+		<Sound id="FLAME_TILE"					path="flametile" />
+		<Sound id="WARNING"						path="warning" />
+		<Sound id="TILE_BURN"					path="tileburn" />
+		<Sound id="BONUS_TILE"					path="appear2" />
+		<Sound id="SUPER_BONUS_TILE"			path="goldtile" />
+		<Sound id="BUTTON_HIT"					path="buttonclick" />
+		<Sound id="RED_TILE_CLEARED"			path="redtilecleared" />
+		<Sound id="SPIN_SUPER_BONUS"			path="spinsuperbonus" />
+		<Sound id="BONUSWORD"					path="bonusword" />
+		<Sound id="GAME_OVER_BURN"				path="screenburngameover" />
+		<Sound id="LEX_ASTONISHING"				path="lex_astonishing" />
+		<Sound id="LEX_AWESOME"					path="lex_awesome" />
+		<Sound id="LEX_BURP"					path="lex_burp" />
+		<Sound id="LEX_CAREFUL"					path="lex_careful" />
+		<Sound id="LEX_DANGER"					path="lex_danger" />
+		<Sound id="LEX_EXCELLENT"				path="lex_excellent" />
+		<Sound id="LEX_FANTASTIC"				path="lex_fantastic" />
+		<Sound id="LEX_GETREADY"				path="lex_getready" />
+		<Sound id="LEX_GO"						path="lex_go" />
+		<Sound id="LEX_INCREDIBLE"				path="lex_incredible" />
+		<Sound id="LEX_LETSGO"					path="lex_letsgo" />
+		<Sound id="LEX_LEVELUP"					path="lex_levelup" />
+		<Sound id="LEX_LOOKOUT"					path="lex_lookout" />
+		<Sound id="LEX_SCRAMBLE"				path="lex_scramble" />
+		<Sound id="LEX_UNBELIEVABLE"			path="lex_unbelievable" />
+		<Sound id="LEX_VERYGOOD"				path="lex_verygood" />
+		<Sound id="LEX_WATCHOUT"				path="lex_watchout" />
+		<Sound id="LEX_WELCOMETOBOOKWORM"		path="lex_welcome" />
+		
+	</Resources>
+
+	
+</ResourceManifest>
