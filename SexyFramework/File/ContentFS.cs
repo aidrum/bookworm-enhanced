@@ -252,6 +252,18 @@ namespace Sexy
 			return OpenResolved(full);
 		}
 
+		/// <summary>Port: reads a file as for theLanguage (its "&lt;lang&gt;.lproj" copy first), whatever the current language.</summary>
+		public static byte[] ReadAllBytes(string thePath, string theLanguage)
+		{
+			Dictionary<string, string> anIndex = GetIndex();
+			string rel = Normalize(thePath);
+			if (!anIndex.TryGetValue(theLanguage + ".lproj/" + rel, out string full) && !anIndex.TryGetValue(rel, out full))
+			{
+				return null;
+			}
+			return ReadResolvedBytes(full);
+		}
+
 		public static byte[] ReadAllBytes(string thePath)
 		{
 			string full = Resolve(thePath);

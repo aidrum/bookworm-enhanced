@@ -7,7 +7,7 @@ namespace Sexy
     /// music volume sliders, switches for hints, definitions and the scramble confirmation, and the version.
     /// Slides up from the bottom.
     /// </summary>
-    public class OptionsDialog : BookWidget, SliderListener, SwitchListener
+    public class OptionsDialog : BookWidget, SliderListener, SwitchListener, ButtonListener
     {
         public const int SLIDER_SFX = 0;
 
@@ -18,6 +18,9 @@ namespace Sexy
         public const int SWITCH_DEFINITIONS = 3;
 
         public const int SWITCH_CONFIRM_SCRAMBLE = 4;
+
+        /// <summary>Port: the language link.</summary>
+        public const int LINK_LANGUAGE = 5;
 
         /// <summary>The option labels colour (header static 0x135948).</summary>
         private static readonly Color LABEL_COLOR = new Color(255, 255, 255, 255);
@@ -44,17 +47,20 @@ namespace Sexy
 
         public Switch mConfirmScrambleSwitch; // 0x130
 
+        /// <summary>Port addition: the language's name at the page's bottom left (as in Peggle Enhanced); a tap switches it.</summary>
+        public HyperlinkWidget mLanguageLink;
+
         /// <summary>How many times hints were switched on while this page was up (0x138).</summary>
         public int mHintsOnCount;
 
         public OptionsDialog(BookWormApp theApp) : base(theApp)
         {
             mHasAlpha = true;
-            mSfxLabel = MakeLabel("Sound Effects");
-            mMusicLabel = MakeLabel("Music Tracks");
-            mHintsLabel = MakeLabel("Show Hints");
-            mDefinitionsLabel = MakeLabel("Show Definitions");
-            mConfirmScrambleLabel = MakeLabel("Confirm to Scramble");
+            mSfxLabel = MakeLabel("");
+            mMusicLabel = MakeLabel("");
+            mHintsLabel = MakeLabel("");
+            mDefinitionsLabel = MakeLabel("");
+            mConfirmScrambleLabel = MakeLabel("");
             mSfxSlider = MakeSlider(SLIDER_SFX);
             mMusicSlider = MakeSlider(SLIDER_MUSIC);
             mHintsSwitch = MakeSwitch(SWITCH_HINTS);
@@ -64,6 +70,32 @@ namespace Sexy
             mVersionLabel.SizeToText();
             mVersionLabel.SetColor(0, new Color(0, 0, 0, 255));
             AddWidget(mVersionLabel);
+            mLanguageLink = new HyperlinkWidget(LINK_LANGUAGE, this);
+            mLanguageLink.SetFont(Res.FONT_DEFINITIONS_SMALL);
+            mLanguageLink.mColor = new Color(0, 0, 0, 255);
+            mLanguageLink.mOverColor = new Color(0, 0x5c, 0x09, 255);
+            mLanguageLink.mUnderlineOffset = 1;
+            AddWidget(mLanguageLink);
+            SetTexts();
+        }
+
+        /// <summary>Port: the labels and the language link in the current language.</summary>
+        private void SetTexts()
+        {
+            SetLabel(mSfxLabel, "Sound Effects");
+            SetLabel(mMusicLabel, "Music Tracks");
+            SetLabel(mHintsLabel, "Show Hints");
+            SetLabel(mDefinitionsLabel, "Show Definitions");
+            SetLabel(mConfirmScrambleLabel, "Confirm to Scramble");
+            mLanguageLink.mLabel = Localization.LANGUAGE_NAMES[Localization.CurrentIndex()];
+            Font aFont = mLanguageLink.mFont;
+            mLanguageLink.Resize(mLanguageLink.mX, mLanguageLink.mY, aFont.StringWidth(mLanguageLink.mLabel), aFont.GetHeight());
+        }
+
+        private static void SetLabel(LabelWidget theLabel, string theText)
+        {
+            theLabel.mText = SexyAppBase.Loc(theText);
+            theLabel.SizeToText();
         }
 
         /// <summary>FUN_0002070c.</summary>
@@ -124,7 +156,11 @@ namespace Sexy
             mMusicSlider.Layout(0x1201, mMusicLabel, 0, aGap, 0, 0);
             mHintsSwitch.Layout(0x2200, mMusicSlider, 0, aGap, 0, 0);
             mDefinitionsSwitch.Layout(0x2200, mHintsSwitch, 0, aGap, 0, 0);
-            mConfirmScrambleSwitch.Layout(0x2200, mDefinitionsSwitch, 0, aGap, 0, 0);
+            // Port: the PC Spanish version has no definitions (HAS_DEFINITIONS false), so neither has its switch.
+            bool aDefinitions = !Localization.IsSpanish;
+            mDefinitionsSwitch.SetVisible(aDefinitions);
+            mDefinitionsLabel.SetVisible(aDefinitions);
+            mConfirmScrambleSwitch.Layout(0x2200, aDefinitions ? mDefinitionsSwitch : mHintsSwitch, 0, aGap, 0, 0);
             mHintsLabel.Layout(0x200800, mHintsSwitch, -aPad, 0, 0, 0);
             mDefinitionsLabel.Layout(0x200800, mDefinitionsSwitch, -aPad, 0, 0, 0);
             mConfirmScrambleLabel.Layout(0x200800, mConfirmScrambleSwitch, -aPad, 0, 0, 0);
@@ -134,6 +170,8 @@ namespace Sexy
             mDefinitionsLabel.mJustifyH = 1;
             mConfirmScrambleLabel.mJustifyH = 1;
             mVersionLabel.Layout(0xa000, this, -aRect.mWidth, 5 - aRect.mHeight, 0, 0);
+            // Port: the language link at the bottom left, level with the version.
+            mLanguageLink.Layout(0x9000, this, aRect.mX, 5 - aRect.mHeight, 0, 0);
         }
 
         /// <summary>
@@ -197,6 +235,44 @@ namespace Sexy
                 return;
             }
             mApp.SaveSettings();
+        }
+
+        /// <summary>Port: the language link switches the language; the page shows it at once.</summary>
+        public void ButtonDepress(int theId)
+        {
+            if (theId != LINK_LANGUAGE)
+            {
+                return;
+            }
+            mApp.PlaySound(Res.SOUND_BUTTON_CLICK);
+            mApp.ChangeLanguage();
+            SetTexts();
+            LayoutControls();
+            MarkDirty();
+        }
+
+        public void ButtonPress(int theId)
+        {
+        }
+
+        public void ButtonPress(int theId, int theClickCount)
+        {
+        }
+
+        public void ButtonDownTick(int theId)
+        {
+        }
+
+        public void ButtonMouseEnter(int theId)
+        {
+        }
+
+        public void ButtonMouseLeave(int theId)
+        {
+        }
+
+        public void ButtonMouseMove(int theId, int theX, int theY)
+        {
         }
     }
 }

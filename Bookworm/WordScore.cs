@@ -99,10 +99,12 @@ namespace Sexy
                 return 0;
             }
             int aValues = 1;
+            // Port: Spanish takes the PC Spanish version's letter values.
+            int[] aLetterValues = Localization.IsSpanish ? Localization.SPANISH_LETTER_VALUES : LETTER_VALUES;
             foreach (char c in mWord)
             {
                 int i = c - 'A';
-                aValues += i >= 0 && i < 26 ? LETTER_VALUES[i] : 0;
+                aValues += i >= 0 && i < 26 ? aLetterValues[i] : 0;
             }
             int aMultiplier = aLength + mTypeCounts[1] * 2 + mTypeCounts[2] * 4 + mTypeCounts[4] * 7 + mTypeCounts[5] * 10;
             if (mTypeCounts[3] == mTileCount)

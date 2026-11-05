@@ -109,7 +109,7 @@ namespace Sexy
             }
             else
             {
-                mApp.mWordBalloon.Speak(PAGE_TEXTS[mPage]);
+                mApp.mWordBalloon.Speak(SexyAppBase.Loc(PAGE_TEXTS[mPage]));
             }
         }
 

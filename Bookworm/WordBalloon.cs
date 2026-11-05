@@ -177,7 +177,7 @@ namespace Sexy
         public void ShowBonusWord(string theWord)
         {
             StartText(TextRect(0x310, 0x238), Res.FONT_ARIAL_MEDIUM, 0);
-            mTextWidget.AddChunk("Make the word");
+            mTextWidget.AddChunk(SexyAppBase.Loc("Make the word"));
             mTextWidget.NewLine(mApp.mScreenPos.At(0x3ec));
             mTextWidget.SetFont(Res.FONT_ARIAL_MEDIUM_OUTLINED);
             mTextWidget.SetColor(new Color(0, 0xff, 0, 0xff));
@@ -185,7 +185,7 @@ namespace Sexy
             mTextWidget.NewLine(mApp.mScreenPos.At(0x3f0));
             mTextWidget.SetFont(Res.FONT_ARIAL_MEDIUM);
             mTextWidget.SetColor(TEXT_COLOR);
-            mTextWidget.AddChunk("for bonus points!");
+            mTextWidget.AddChunk(SexyAppBase.Loc("for bonus points!"));
             mTextWidget.NewLine(0);
             mTextWidget.Fit(1);
             Prepare(mApp.mScreenPos.RectAt(0x230), AtlasResourceBase.IMAGE_GROUP51_03, false);

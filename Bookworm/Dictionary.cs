@@ -21,9 +21,10 @@ namespace Sexy
         public int mWordCount; // 0x10
 
         /// <summary>FUN_000150a0: loads an encoded word file. False if it can't be read.</summary>
-        public bool LoadFile(string thePath)
+        public bool LoadFile(string thePath, string theLanguage = null)
         {
-            byte[] aData = ContentFS.ReadAllBytes(thePath);
+            // Port: theLanguage reads another language's file than the current one's.
+            byte[] aData = theLanguage == null ? ContentFS.ReadAllBytes(thePath) : ContentFS.ReadAllBytes(thePath, theLanguage);
             if (aData == null)
             {
                 return false;

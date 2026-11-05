@@ -313,7 +313,7 @@ namespace Sexy
                 aBalloon.Say("PERSONAL BESTS!");
                 break;
             case 7:
-                aBalloon.Say("OPTIONS!");
+                aBalloon.Say(SexyAppBase.Loc("OPTIONS!"));
                 break;
             case 10:
                 // Back on the board, a word being spelled shows again.
@@ -323,7 +323,7 @@ namespace Sexy
                 }
                 break;
             case 11:
-                aBalloon.Say(mApp.mBoard != null && mApp.mBoard.mState == Board.STATE_GAME_OVER ? "GAME OVER!" : "LEVEL UP!");
+                aBalloon.Say(mApp.mBoard != null && mApp.mBoard.mState == Board.STATE_GAME_OVER ? "GAME OVER!" : SexyAppBase.Loc("LEVEL UP!"));
                 break;
             }
         }

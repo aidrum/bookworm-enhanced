@@ -106,8 +106,23 @@ namespace Sexy
 
         public Dictionary mDictionary = new Dictionary(); // 0x11dc
 
-        /// <summary>Words that can be the bonus word (dict/bonus_words.txt, only those in the dictionary) (0x11f0).</summary>
-        public System.Collections.Generic.List<string> mBonusWords = new System.Collections.Generic.List<string>();
+        /// <summary>
+        /// Words that can be the bonus word (dict/bonus_words.txt, only those in the dictionary) (0x11f0). Port: one
+        /// list per language (by Localization.LANGUAGES), as the board picks a bonus word in each.
+        /// </summary>
+        public System.Collections.Generic.List<string>[] mBonusWordLists;
+
+        /// <summary>The current language's bonus words.</summary>
+        public System.Collections.Generic.List<string> mBonusWords
+        {
+            get { return GetBonusWords(Localization.CurrentIndex()); }
+        }
+
+        /// <summary>Port: a language's bonus words (by its index in Localization.LANGUAGES).</summary>
+        public System.Collections.Generic.List<string> GetBonusWords(int theLanguage)
+        {
+            return mBonusWordLists != null ? mBonusWordLists[theLanguage] : new System.Collections.Generic.List<string>();
+        }
 
         public BookWormApp(Main theGame) : base(theGame)
         {
@@ -219,19 +234,12 @@ namespace Sexy
             mResourceManager.SetGroupAsLoaded("Init");
             mAtlasResources = AtlasResourceBase.Create(GetTextureSide());
             mAtlasResources.UnpackImages();
-            if (!mDictionary.LoadFile("dict/oed_encoded.txt"))
+            if (!LoadWords())
             {
                 mLoadingFailed = true;
                 return;
             }
-            mCompletedLoadingThreadTasks++;
-            LoadWordList("dict/bonus_words.txt", mBonusWords);
-            mCompletedLoadingThreadTasks++;
-            int aBonusCount = mBonusWords.Count;
-            mBonusWords.RemoveAll(aWord => !mDictionary.IsWord(aWord));
-            Console.Error.WriteLine(string.Format("Dictionary: {0} words, {1} of {2} bonus words kept", mDictionary.mWordCount, mBonusWords.Count, aBonusCount));
-            mDefinitionator = new Definitionator(this);
-            mDefinitionator.Load("dict/oed_definitions.txt");
+            mCompletedLoadingThreadTasks += 2;
             do
             {
                 mCompletedLoadingThreadTasks++;
@@ -269,6 +277,76 @@ namespace Sexy
             mWordBalloon = new WordBalloon(this);
             mWordBalloon.mZOrder = 0x55;
             mWidgetManager.AddWidget(mWordBalloon);
+        }
+
+        /// <summary>
+        /// The loading thread's dictionary, bonus words (only those in the dictionary) and definitions. Port: also
+        /// again when the language changes (the dictionary and definitions; the bonus words of every language are
+        /// read the first time); in Spanish ContentFS finds the PC version's lists in es.lproj/dict.
+        /// </summary>
+        public bool LoadWords()
+        {
+            Dictionary aDictionary = new Dictionary();
+            if (!aDictionary.LoadFile("dict/oed_encoded.txt"))
+            {
+                return false;
+            }
+            if (mBonusWordLists == null)
+            {
+                System.Collections.Generic.List<string>[] aLists = new System.Collections.Generic.List<string>[Localization.LANGUAGES.Length];
+                for (int i = 0; i < aLists.Length; i++)
+                {
+                    string aLanguage = Localization.LANGUAGES[i].ToString();
+                    Dictionary aListDictionary = aDictionary;
+                    if (i != Localization.CurrentIndex())
+                    {
+                        // The other language's dictionary, only to keep its bonus words that are in it.
+                        aListDictionary = new Dictionary();
+                        aListDictionary.LoadFile("dict/oed_encoded.txt", aLanguage);
+                    }
+                    aLists[i] = new System.Collections.Generic.List<string>();
+                    LoadWordList("dict/bonus_words.txt", aLists[i], aLanguage);
+                    int aBonusCount = aLists[i].Count;
+                    aLists[i].RemoveAll(aWord => !aListDictionary.IsWord(aWord));
+                    Console.Error.WriteLine(string.Format("Dictionary ({0}): {1} words, {2} of {3} bonus words kept", aLanguage, aListDictionary.mWordCount, aLists[i].Count, aBonusCount));
+                }
+                mBonusWordLists = aLists;
+            }
+            Definitionator aDefinitionator = new Definitionator(this);
+            // Port: the PC Spanish version has no definitions (HAS_DEFINITIONS false, an empty popdefs.txt).
+            if (!Localization.IsSpanish)
+            {
+                aDefinitionator.Load("dict/oed_definitions.txt");
+            }
+            mDictionary = aDictionary;
+            mDefinitionator = aDefinitionator;
+            return true;
+        }
+
+        /// <summary>
+        /// Port addition: the Options page's language link. Switches to the next language (English, Spanish),
+        /// keeps it, and reloads the texts and word lists. A game in progress goes on with the new words.
+        /// </summary>
+        public void ChangeLanguage()
+        {
+            Constants.LanguageIndex anOld = Constants.Language;
+            Constants.Language = Localization.LANGUAGES[(Localization.CurrentIndex() + 1) % Localization.LANGUAGES.Length];
+            if (!LoadWords())
+            {
+                Constants.Language = anOld;
+                return;
+            }
+            RegistryWriteInteger("Language", (int)Constants.Language);
+            Localization.LoadStrings(this);
+            foreach (InterfaceWidget aScreen in mScreens)
+            {
+                if (aScreen is WordBookWidget aBook && aBook.mContinueButton != null)
+                {
+                    aBook.mContinueButton.mLabel = SexyAppBase.Loc("CONTINUE");
+                }
+            }
+            // The board swaps in its bonus words for the new language.
+            mBoard?.SyncBonusWordLanguage();
         }
 
         /// <summary>0x1200c: a screen's move ended; when none is left moving, all of them are told the state is reached.</summary>
@@ -332,6 +410,8 @@ namespace Sexy
         /// <summary>Port: the settings SaveSettings kept.</summary>
         public void LoadSettings()
         {
+            Constants.Language = Localization.GetStartLanguage(this);
+            Localization.LoadStrings(this);
             RegistryReadBoolean("ShowHints", ref mShowHints);
             RegistryReadBoolean("ShowDefinitions", ref mShowDefinitions);
             RegistryReadBoolean("ConfirmScramble", ref mConfirmScramble);
@@ -413,6 +493,8 @@ namespace Sexy
             if (HasSavedGame(theMode))
             {
                 mBoard.LoadGame(theMode);
+                // Port: the save's bonus words may be in the other language.
+                mBoard.SyncBonusWordLanguage();
             }
             if (theMode == GAME_CLASSIC)
             {
@@ -687,9 +769,10 @@ namespace Sexy
         /// FUN_00015208: reads a word list in the dictionary's encoding (a line may start with how many letters
         /// it keeps from the previous one). Words of more than two letters are added, upper-cased.
         /// </summary>
-        public bool LoadWordList(string thePath, System.Collections.Generic.List<string> theWords)
+        public bool LoadWordList(string thePath, System.Collections.Generic.List<string> theWords, string theLanguage = null)
         {
-            byte[] aData = ContentFS.ReadAllBytes(thePath);
+            // Port: theLanguage reads another language's file than the current one's.
+            byte[] aData = theLanguage == null ? ContentFS.ReadAllBytes(thePath) : ContentFS.ReadAllBytes(thePath, theLanguage);
             if (aData == null)
             {
                 return false;

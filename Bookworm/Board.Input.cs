@@ -20,6 +20,17 @@ namespace Sexy
 
         public string mNextBonusWord = "";
 
+        /// <summary>
+        /// Port: the bonus word and the next one in the other language, picked along with mBonusWord and
+        /// mNextBonusWord and swapped with them when the language changes, so changing it can't re-roll them.
+        /// </summary>
+        public string mOtherBonusWord = "";
+
+        public string mOtherNextBonusWord = "";
+
+        /// <summary>Port: the language (Localization.LANGUAGES index) mBonusWord and mNextBonusWord are in.</summary>
+        public int mBonusWordLanguage;
+
         /// <summary>Bonus words picked (0x254), for their length.</summary>
         public int mBonusWordsPicked;
 
@@ -38,17 +49,59 @@ namespace Sexy
         /// </summary>
         public void PickBonusWord()
         {
-            List<string> aWords = mApp.mBonusWords;
+            SyncBonusWordLanguage();
             int aLength = BONUS_WORD_LENGTHS[System.Math.Min(mBonusWordsPicked, 9)];
-            for (int aTries = aWords.Count; aTries > 0; aTries--)
+            string aWord = PickBonusWord(mApp.mBonusWords, aLength, mNextBonusWord);
+            if (aWord != null)
             {
-                string aWord = aWords[(int)(gRand.Next() % (uint)aWords.Count)];
-                if (aWord.Length == aLength && aWord != mNextBonusWord)
+                mNextBonusWord = aWord;
+                mBonusWordsPicked++;
+                // Port: the other language's word of the same length is picked with it.
+                mOtherNextBonusWord = PickBonusWord(mApp.GetBonusWords(OtherLanguage()), aLength, mOtherNextBonusWord) ?? "";
+            }
+        }
+
+        /// <summary>FUN_000042f4's tries: a random word of theLength from theWords other than theLast, or null.</summary>
+        private static string PickBonusWord(List<string> theWords, int theLength, string theLast)
+        {
+            for (int aTries = theWords.Count; aTries > 0; aTries--)
+            {
+                string aWord = theWords[(int)(gRand.Next() % (uint)theWords.Count)];
+                if (aWord.Length == theLength && aWord != theLast)
                 {
-                    mNextBonusWord = aWord;
-                    mBonusWordsPicked++;
-                    break;
+                    return aWord;
                 }
+            }
+            return null;
+        }
+
+        /// <summary>Port: the index (in Localization.LANGUAGES) of the language other than the bonus words' one.</summary>
+        private int OtherLanguage()
+        {
+            return (mBonusWordLanguage + 1) % Localization.LANGUAGES.Length;
+        }
+
+        /// <summary>
+        /// Port: when the language is no longer the bonus words', the other language's ones are swapped in. One
+        /// missing there (a game saved before both were picked) is picked now, as long as its counterpart.
+        /// </summary>
+        public void SyncBonusWordLanguage()
+        {
+            int aLanguage = Localization.CurrentIndex();
+            if (mBonusWordLanguage == aLanguage)
+            {
+                return;
+            }
+            (mBonusWord, mOtherBonusWord) = (mOtherBonusWord, mBonusWord);
+            (mNextBonusWord, mOtherNextBonusWord) = (mOtherNextBonusWord, mNextBonusWord);
+            mBonusWordLanguage = aLanguage;
+            if (mBonusWord.Length == 0 && mOtherBonusWord.Length != 0)
+            {
+                mBonusWord = PickBonusWord(mApp.mBonusWords, mOtherBonusWord.Length, "") ?? "";
+            }
+            if (mNextBonusWord.Length == 0 && mOtherNextBonusWord.Length != 0)
+            {
+                mNextBonusWord = PickBonusWord(mApp.mBonusWords, mOtherNextBonusWord.Length, mBonusWord) ?? "";
             }
         }
 
@@ -61,7 +114,7 @@ namespace Sexy
         {
             mApp.PlaySound(Res.SOUND_BONUSWORD);
             mApp.mLex.PlayAnim(7, false);
-            AddPopup(string.Format("+{0} BONUS!", thePoints), theY + 0x3c);
+            AddPopup(string.Format(SexyAppBase.Loc("+{0} BONUS!"), thePoints), theY + 0x3c);
             mLevelStats.mScore += thePoints;
             mLevelStats.mBonusWords++;
             mGameStats.mScore += thePoints;
@@ -70,6 +123,7 @@ namespace Sexy
             {
                 PickBonusWord();
                 mBonusWord = "";
+                mOtherBonusWord = "";
             }
         }
 

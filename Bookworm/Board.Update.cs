@@ -237,6 +237,7 @@ namespace Sexy
             if (mBonusWord.Length == 0 && (mLevel > 1 || (mLevel == 1 && mLevelStats.mWords > 0)))
             {
                 mBonusWord = mNextBonusWord;
+                mOtherBonusWord = mOtherNextBonusWord;
                 if (mBonusWord.Length != 0)
                 {
                     mApp.mWordBalloon.ShowBonusWord(mBonusWord);
@@ -339,7 +340,7 @@ namespace Sexy
             }
             string[] aHint = HINTS[theKind];
             string aText = theKind == HINT_FIRE_ALERT && mApp.mGameMode == BookWormApp.GAME_ARCADE ? aHint[2] : aHint[1];
-            ShowHintAlert(aHint[0], aText);
+            ShowHintAlert(SexyAppBase.Loc(aHint[0]), SexyAppBase.Loc(aText));
         }
 
         /// <summary>FUN_00008ad4: with hints on, an alert with the hint: "Disable Hints" (1001) or "Continue" (1000).</summary>
@@ -353,8 +354,8 @@ namespace Sexy
             Alert anAlert = new Alert(0, this, mApp);
             anAlert.SetTitle(theTitle);
             anAlert.SetMessage(theText);
-            anAlert.AddGreenButton(DIALOG_DISABLE_HINTS, "Disable Hints");
-            anAlert.AddRedButton(DIALOG_CONTINUE, "Continue");
+            anAlert.AddGreenButton(DIALOG_DISABLE_HINTS, SexyAppBase.Loc("Disable Hints"));
+            anAlert.AddRedButton(DIALOG_CONTINUE, SexyAppBase.Loc("Continue"));
             anAlert.Show();
         }
 

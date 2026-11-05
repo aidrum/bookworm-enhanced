@@ -33,7 +33,7 @@ namespace Sexy
             if (mFireTileCount >= 10)
             {
                 mApp.PlaySound(Res.SOUND_BUZZER);
-                ShowCantScramble("Scrambling now would put too many fire tiles on the board!");
+                ShowCantScramble(SexyAppBase.Loc("Scrambling now would put too many fire tiles on the board!"));
                 return;
             }
             mScrambleCandidates.Clear();
@@ -59,7 +59,7 @@ namespace Sexy
                     if (aBottom != null && aBottom.mType == Piece.TYPE_FIRE)
                     {
                         mApp.PlaySound(Res.SOUND_BUZZER);
-                        ShowCantScramble("Scrambling now would cause you to lose the game!");
+                        ShowCantScramble(SexyAppBase.Loc("Scrambling now would cause you to lose the game!"));
                         return;
                     }
                     for (int aRow = ROWS - 1; aRow >= 0; aRow--)
@@ -86,7 +86,7 @@ namespace Sexy
             aMessage.NewLine(0);
             aMessage.Fit(0);
             aSheet.SetRedButton(BUTTON_SCRAMBLE, "Scramble");
-            aSheet.SetGreenButton(BUTTON_CANCEL, "Cancel");
+            aSheet.SetGreenButton(BUTTON_CANCEL, SexyAppBase.Loc("Cancel"));
             aSheet.Show();
         }
 
@@ -106,9 +106,9 @@ namespace Sexy
         {
             mHintShowing = true;
             Alert anAlert = new Alert(DIALOG_CANT_SCRAMBLE, this, mApp);
-            anAlert.SetTitle("Can't Scramble!");
+            anAlert.SetTitle(SexyAppBase.Loc("Can't Scramble!"));
             anAlert.SetMessage(theReason);
-            anAlert.AddRedButton(DIALOG_CONTINUE, "OK");
+            anAlert.AddRedButton(DIALOG_CONTINUE, SexyAppBase.Loc("OK"));
             anAlert.Show();
         }
 

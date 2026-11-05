@@ -104,7 +104,7 @@ namespace Sexy
             mContinueButton.SetFont(Res.FONT_COOPER_OUTLINED);
             mContinueButton.SetColor(0, Dialogoid.GREEN_BUTTON_COLOR);
             mContinueButton.SetColor(1, Dialogoid.GREEN_BUTTON_COLOR);
-            mContinueButton.mLabel = "CONTINUE";
+            mContinueButton.mLabel = SexyAppBase.Loc("CONTINUE");
             AddWidget(mContinueButton);
         }
 
@@ -142,7 +142,7 @@ namespace Sexy
         {
             mText.SetFont(mHeadingFont);
             mText.SetColor(GetColor(2));
-            mText.AddChunk(theHeading);
+            mText.AddChunk(SexyAppBase.Loc(theHeading));
             mText.SetColor(GetColor(3));
             if (theMode == BookWormApp.GAME_CLASSIC)
             {
@@ -150,7 +150,7 @@ namespace Sexy
             }
             else if (theMode == BookWormApp.GAME_ARCADE)
             {
-                mText.AddChunk(" (Action)");
+                mText.AddChunk(SexyAppBase.Loc(" (Action)"));
             }
             mText.NewLine(0);
         }
@@ -178,10 +178,10 @@ namespace Sexy
         /// <summary>FUN_00036524: "Rank N: " and the rank's title.</summary>
         public void AddRank(int theRank)
         {
-            string aName = RANK_NAMES[System.Math.Min(theRank, 0x1f)];
+            string aName = SexyAppBase.Loc(RANK_NAMES[System.Math.Min(theRank, 0x1f)]);
             mText.SetFont(mTextFont);
             mText.SetColor(BLACK);
-            mText.AddChunk(string.Format("Rank {0}: ", theRank));
+            mText.AddChunk(string.Format(SexyAppBase.Loc("Rank {0}: "), theRank));
             mText.SetColor(RANK_COLOR);
             mText.AddChunk(aName);
         }
@@ -192,7 +192,7 @@ namespace Sexy
             AddHeading("Longest Word", theMode);
             mText.SetFont(mTextFont);
             mText.SetColor(BLACK);
-            mText.AddChunk(string.Format("{0} ({1} letters)", theWord, theWord.Length));
+            mText.AddChunk(string.Format(SexyAppBase.Loc("{0} ({1} letters)"), theWord, theWord.Length));
             EndEntry();
         }
 
@@ -202,7 +202,7 @@ namespace Sexy
             AddHeading("Best Word", theMode);
             mText.SetFont(mTextFont);
             mText.SetColor(BLACK);
-            mText.AddChunk(string.Format("{0} ({1} pts)", theWord, theScore));
+            mText.AddChunk(string.Format(SexyAppBase.Loc("{0} ({1} pts)"), theWord, theScore));
             EndEntry();
         }
 

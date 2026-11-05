@@ -165,7 +165,7 @@ namespace Sexy
             {
                 ActionSheet aSheet = new ActionSheet(DIALOG_DISCARD, this, mApp);
                 aSheet.SetRedButton(theButtonId, "Discard Saved Game");
-                aSheet.SetGreenButton(1001, "Cancel");
+                aSheet.SetGreenButton(1001, SexyAppBase.Loc("Cancel"));
                 aSheet.Show();
                 break;
             }
