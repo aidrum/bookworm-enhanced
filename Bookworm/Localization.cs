@@ -7,7 +7,7 @@ namespace Sexy
     /// The iOS game is English only. In Spanish the game takes the PC version's word list and bonus words
     /// (Content/es.lproj/dict, found first by ContentFS while the language is "es"), its letter values and
     /// odds (LETTER_VALUES / LETTER_FREQS in its properties/default.xml) and the texts the PC version has.
-    /// Texts the PC version lacks stay English, images are not translated, and the PC version has no
+    /// Texts the PC version lacks are translated in its terms, images are not translated, and the PC version has no
     /// definitions (HAS_DEFINITIONS false), so none are shown. net_content (More Games) stays English.
     /// </summary>
     public static class Localization
@@ -111,6 +111,9 @@ namespace Sexy
             { "Fire Alert!", "¡Incendio!" },
             { "That burning tile is too close!\n\nUse it this turn or your library will catch fire!",
                 "¡Esa ficha de fuego está demasiado cerca!\n\n¡Úsala en este turno o tu biblioteca se incendiará!" },
+            // Not in the PC version: translated for the port, in its terms (ficha, mezclar, bonificación).
+            { "That burning tile is too close!\n\nUse it soon or your library will catch fire!",
+                "¡Esa ficha de fuego está demasiado cerca!\n\n¡Úsala pronto o tu biblioteca se incendiará!" },
             // CLICK_DISABLE_HINTS, CONTINUE, CANCEL, OK
             { "Disable Hints", "Desactivar las pistas" },
             { "Continue", "Continuar" },
@@ -153,6 +156,48 @@ namespace Sexy
             { "Select adjacent letter tiles to spell words!", "Haz clic en las letras para formar palabras." },
             { "Don't let fire tiles burn through the bottom or it's game over!",
                 "¡Cuidado con las fichas de fuego! Si llegan abajo, ¡fin del juego!" },
+            // Not in the PC version: translated for the port.
+            { "Start New Game", "Nueva partida" },
+            { "Continue Game", "Continuar partida" },
+            { "Discard Saved Game", "Descartar partida" },
+            { "TIME BONUS!", "¡BONUS DE TIEMPO!" },
+            { "There are too many fire tiles at the top of the board!", "¡Hay demasiadas fichas de fuego en la parte superior del tablero!" },
+            { "Scrambling the board will add fire tiles and remove your bonus tiles.",
+                "Al mezclar el tablero aparecerán fichas de fuego y perderás tus fichas de bonificación." },
+            { "Scramble", "Mezclar" },
+            { "If you're really stuck, tap me or try shaking things up!", "Si de verdad estás atascado, ¡tócame o agita el dispositivo!" },
+            { "Highest Rank", "Posición más alta" },
+            { "PERSONAL BESTS!", "¡MEJORES MARCAS!" },
+            { "GAME OVER!", "¡FIN DEL JUEGO!" },
+            { "Confirm to Scramble", "Confirmar al mezclar" },
+            { "TAP TO SUBMIT", "TOCA PARA ENVIAR" },
+            { " (Classic)", " (Clásico)" },
+            { "You've opened a new Collection Book!", "¡Has abierto un nuevo libro de colección!" },
+            { "You've spelled every word in this Collection Book!", "¡Has formado todas las palabras de este libro de colección!" },
+            { "You've spelled a new Collection Word!", "¡Has formado una nueva palabra de colección!" },
+            { "RECENT {0} LETTER WORDS", "P. RECIENTES DE {0} LETRAS" },
+            { "Tap the word bubble or the last letter tile to submit your word!",
+                "¡Toca el globo de la palabra o la última ficha para enviar tu palabra!" },
+            { "Shake your device to scramble all of your tiles!", "¡Agita el dispositivo para mezclar todas tus fichas!" },
+            { "Turn your device to see the Bonus Book List! Can you spell them all?",
+                "¡Gira el dispositivo para ver la lista de libros de bonificación! ¿Podrás formar todas sus palabras?" },
+            { "Credits: (n.) Acknowledgement and praise for the awesome creators of Lex!",
+                "Créditos: (m. pl.) ¡Reconocimiento y elogio para los geniales creadores de Lex!" },
+            { "Update (n): The act or an instance of bringing something up to date. Now with iPad support!",
+                "Actualización (f.): Acción y efecto de poner algo al día. ¡Ahora compatible con iPad!" },
+            { "Original (adj): Preceding all others in time; first. There's nothing quite like Bookworm!",
+                "Original (adj.): Que precede a todos los demás en el tiempo; primero. ¡No hay nada como Bookworm!" },
+            { "Lex: (n.) Me! The best-spelling worm of all time!", "Lex: (m.) ¡Yo! ¡El gusano que mejor escribe de todos los tiempos!" },
+            // The collection books' names (their file names).
+            { "body parts", "partes del cuerpo" },
+            { "clothing", "ropa" },
+            { "colors", "colores" },
+            { "fruits", "frutas" },
+            { "insects", "insectos" },
+            { "minerals", "minerales" },
+            { "pets", "mascotas" },
+            { "tools", "herramientas" },
+            { "vegetables", "verduras" },
             // RANK_NAMES
             { "Book Burner", "Pirómano de libros" },
             { "Encyclopedia Salesman", "Vendedor de libros" },

@@ -51,29 +51,46 @@ namespace Sexy
         {
             SyncBonusWordLanguage();
             int aLength = BONUS_WORD_LENGTHS[System.Math.Min(mBonusWordsPicked, 9)];
-            string aWord = PickBonusWord(mApp.mBonusWords, aLength, mNextBonusWord);
+            string aWord = PickBonusWord(mApp.mBonusWords, aLength, mNextBonusWord, out uint aRoll);
             if (aWord != null)
             {
                 mNextBonusWord = aWord;
                 mBonusWordsPicked++;
-                // Port: the other language's word of the same length is picked with it.
-                mOtherNextBonusWord = PickBonusWord(mApp.GetBonusWords(OtherLanguage()), aLength, mOtherNextBonusWord) ?? "";
+                // Port: the other language's word of the same length is picked with it, by the same random number,
+                // so the random sequence (and with it the letters) is the original's.
+                mOtherNextBonusWord = PickBonusWordByRoll(mApp.GetBonusWords(OtherLanguage()), aLength, mOtherNextBonusWord, aRoll) ?? "";
             }
         }
 
-        /// <summary>FUN_000042f4's tries: a random word of theLength from theWords other than theLast, or null.</summary>
-        private static string PickBonusWord(List<string> theWords, int theLength, string theLast)
+        /// <summary>
+        /// FUN_000042f4's tries: a random word of theLength from theWords other than theLast, or null. theRoll is
+        /// the random number that picked it.
+        /// </summary>
+        private static string PickBonusWord(List<string> theWords, int theLength, string theLast, out uint theRoll)
         {
             for (int aTries = theWords.Count; aTries > 0; aTries--)
             {
-                string aWord = theWords[(int)(gRand.Next() % (uint)theWords.Count)];
+                theRoll = gRand.Next();
+                string aWord = theWords[(int)(theRoll % (uint)theWords.Count)];
                 if (aWord.Length == theLength && aWord != theLast)
                 {
                     return aWord;
                 }
             }
+            theRoll = 0;
             return null;
         }
+
+        /// <summary>Port: the word of theLength other than theLast that theRoll picks among theWords' such words, or null.</summary>
+        private static string PickBonusWordByRoll(List<string> theWords, int theLength, string theLast, uint theRoll)
+        {
+            List<string> aMatches = theWords.FindAll(aWord => aWord.Length == theLength && aWord != theLast);
+            return aMatches.Count == 0 ? null : aMatches[(int)(theRoll % (uint)aMatches.Count)];
+        }
+
+        /// <summary>Port: rolls for the bonus words that saves from before the Spanish mode lack (not gRand, so the
+        /// game's random sequence is not disturbed).</summary>
+        private static readonly System.Random gBonusFillRand = new System.Random();
 
         /// <summary>Port: the index (in Localization.LANGUAGES) of the language other than the bonus words' one.</summary>
         private int OtherLanguage()
@@ -97,11 +114,11 @@ namespace Sexy
             mBonusWordLanguage = aLanguage;
             if (mBonusWord.Length == 0 && mOtherBonusWord.Length != 0)
             {
-                mBonusWord = PickBonusWord(mApp.mBonusWords, mOtherBonusWord.Length, "") ?? "";
+                mBonusWord = PickBonusWordByRoll(mApp.mBonusWords, mOtherBonusWord.Length, "", (uint)gBonusFillRand.Next()) ?? "";
             }
             if (mNextBonusWord.Length == 0 && mOtherNextBonusWord.Length != 0)
             {
-                mNextBonusWord = PickBonusWord(mApp.mBonusWords, mOtherNextBonusWord.Length, mBonusWord) ?? "";
+                mNextBonusWord = PickBonusWordByRoll(mApp.mBonusWords, mOtherNextBonusWord.Length, mBonusWord, (uint)gBonusFillRand.Next()) ?? "";
             }
         }
 

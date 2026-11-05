@@ -201,7 +201,7 @@ namespace Sexy
             mArcadeCountdown = ARCADE_COUNTDOWN;
             if (mApp.mGameMode == BookWormApp.GAME_ARCADE && mApp.mLex.mSparkle)
             {
-                AddPopup("TIME BONUS!", 0xa0);
+                AddPopup(SexyAppBase.Loc("TIME BONUS!"), 0xa0);
                 mApp.mLex.PlayAnim(7, false);
                 mApp.PlaySound(Res.SOUND_WORD_COMPLETE);
             }

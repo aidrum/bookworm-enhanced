@@ -129,8 +129,8 @@ namespace Sexy
         private void ShowNewOrContinue(int theNewId, int theContinueId)
         {
             ActionSheet aSheet = new ActionSheet(DIALOG_NEW_OR_CONTINUE, this, mApp);
-            aSheet.SetRedButton(theNewId, "Start New Game");
-            aSheet.SetGreenButton(theContinueId, "Continue Game");
+            aSheet.SetRedButton(theNewId, SexyAppBase.Loc("Start New Game"));
+            aSheet.SetGreenButton(theContinueId, SexyAppBase.Loc("Continue Game"));
             aSheet.Show();
         }
 
@@ -164,7 +164,7 @@ namespace Sexy
             case 3:
             {
                 ActionSheet aSheet = new ActionSheet(DIALOG_DISCARD, this, mApp);
-                aSheet.SetRedButton(theButtonId, "Discard Saved Game");
+                aSheet.SetRedButton(theButtonId, SexyAppBase.Loc("Discard Saved Game"));
                 aSheet.SetGreenButton(1001, SexyAppBase.Loc("Cancel"));
                 aSheet.Show();
                 break;

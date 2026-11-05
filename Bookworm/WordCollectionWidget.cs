@@ -80,7 +80,7 @@ namespace Sexy
             int aCount = mBook != null ? mBook.mWords.Count : 0;
             int aFound = mBook != null ? mBook.mFoundCount : 0;
             mComplete = aFound == aCount;
-            string aName = mBook != null ? mBook.mName.ToUpperInvariant() : "";
+            string aName = mBook != null ? SexyAppBase.Loc(mBook.mName).ToUpperInvariant() : "";
 
             mTitle.Clear();
             mTitle.SetFont(mHeadingFont);
@@ -178,15 +178,15 @@ namespace Sexy
             string aText;
             if (mBook.mFoundCount == 1)
             {
-                aText = "You've opened a new Collection Book!";
+                aText = SexyAppBase.Loc("You've opened a new Collection Book!");
             }
             else if (mBook.mFoundCount == mBook.mWords.Count)
             {
-                aText = "You've spelled every word in this Collection Book!";
+                aText = SexyAppBase.Loc("You've spelled every word in this Collection Book!");
             }
             else
             {
-                aText = "You've spelled a new Collection Word!";
+                aText = SexyAppBase.Loc("You've spelled a new Collection Word!");
             }
             mApp.mWordBalloon.ShowText(aText);
             mTimeline.Start();

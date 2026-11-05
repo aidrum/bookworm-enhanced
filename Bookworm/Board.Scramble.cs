@@ -48,7 +48,7 @@ namespace Sexy
             if (mScrambleCandidates.Count == 0)
             {
                 mApp.PlaySound(Res.SOUND_BUZZER);
-                ShowCantScramble("There are too many fire tiles at the top of the board!");
+                ShowCantScramble(SexyAppBase.Loc("There are too many fire tiles at the top of the board!"));
                 return;
             }
             if (mApp.mGameMode == BookWormApp.GAME_CLASSIC)
@@ -82,10 +82,10 @@ namespace Sexy
             aMessage.SetFont(Res.FONT_ARIAL_MEDIUM_OUTLINED);
             aMessage.SetColor(Color.White);
             aMessage.SetJustify(0);
-            aMessage.AddText("Scrambling the board will add fire tiles and remove your bonus tiles.", 0);
+            aMessage.AddText(SexyAppBase.Loc("Scrambling the board will add fire tiles and remove your bonus tiles."), 0);
             aMessage.NewLine(0);
             aMessage.Fit(0);
-            aSheet.SetRedButton(BUTTON_SCRAMBLE, "Scramble");
+            aSheet.SetRedButton(BUTTON_SCRAMBLE, SexyAppBase.Loc("Scramble"));
             aSheet.SetGreenButton(BUTTON_CANCEL, SexyAppBase.Loc("Cancel"));
             aSheet.Show();
         }

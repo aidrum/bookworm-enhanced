@@ -143,7 +143,7 @@ namespace Sexy
             }
             if (++mHintIdleCount == STUCK_HINT_FRAMES[mApp.mHintTutorialStep2])
             {
-                mApp.mWordBalloon.ShowText("If you're really stuck, tap me or try shaking things up!");
+                mApp.mWordBalloon.ShowText(SexyAppBase.Loc("If you're really stuck, tap me or try shaking things up!"));
                 mApp.mHintTutorialShown = true;
                 mApp.mHintTutorialStep2++;
                 mApp.SaveSettings();

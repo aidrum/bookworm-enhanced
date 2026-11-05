@@ -310,7 +310,7 @@ namespace Sexy
             switch (mInterfaceState)
             {
             case 3:
-                aBalloon.Say("PERSONAL BESTS!");
+                aBalloon.Say(SexyAppBase.Loc("PERSONAL BESTS!"));
                 break;
             case 7:
                 aBalloon.Say(SexyAppBase.Loc("OPTIONS!"));
@@ -323,7 +323,7 @@ namespace Sexy
                 }
                 break;
             case 11:
-                aBalloon.Say(mApp.mBoard != null && mApp.mBoard.mState == Board.STATE_GAME_OVER ? "GAME OVER!" : SexyAppBase.Loc("LEVEL UP!"));
+                aBalloon.Say(mApp.mBoard != null && mApp.mBoard.mState == Board.STATE_GAME_OVER ? SexyAppBase.Loc("GAME OVER!") : SexyAppBase.Loc("LEVEL UP!"));
                 break;
             }
         }

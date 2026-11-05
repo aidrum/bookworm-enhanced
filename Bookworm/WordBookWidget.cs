@@ -146,7 +146,7 @@ namespace Sexy
             mText.SetColor(GetColor(3));
             if (theMode == BookWormApp.GAME_CLASSIC)
             {
-                mText.AddChunk(" (Classic)");
+                mText.AddChunk(SexyAppBase.Loc(" (Classic)"));
             }
             else if (theMode == BookWormApp.GAME_ARCADE)
             {

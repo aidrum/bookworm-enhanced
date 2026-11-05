@@ -191,7 +191,7 @@ namespace Sexy
                 }
                 else
                 {
-                    aName = aBook.mName.ToUpperInvariant();
+                    aName = SexyAppBase.Loc(aBook.mName).ToUpperInvariant();
                     aSpine = AtlasResourceBase.GetImageById(SPINE_ID + i);
                     mOpened[i] = true;
                 }

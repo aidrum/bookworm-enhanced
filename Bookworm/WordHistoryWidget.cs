@@ -35,7 +35,7 @@ namespace Sexy
             mTitle.SetJustify(0);
             mTitle.SetFont(mHeadingFont);
             mTitle.SetColor(GetColor(2));
-            mTitle.AddChunk(string.Format("RECENT {0} LETTER WORDS", aLength));
+            mTitle.AddChunk(string.Format(SexyAppBase.Loc("RECENT {0} LETTER WORDS"), aLength));
             mTitle.NewLine(0);
             mTitle.Fit(1);
 

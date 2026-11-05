@@ -256,7 +256,7 @@ namespace Sexy
                     mTextWidget.NewLine(0);
                     mTextWidget.SetFont(Res.FONT_ARIAL_SMALL);
                     mTextWidget.SetColor(new Color(0, 0x5c, 0x09, 0xff));
-                    mTextWidget.AddChunk("TAP TO SUBMIT");
+                    mTextWidget.AddChunk(SexyAppBase.Loc("TAP TO SUBMIT"));
                     mTextWidget.NewLine(0);
                 }
             }
