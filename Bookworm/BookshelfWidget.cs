@@ -86,7 +86,8 @@ namespace Sexy
             }
             else
             {
-                Resize(0, 0, aPos.At(0x218), aPos.At(0x21c));
+                // Port (wide screens): centred with the design.
+                Resize(aPos.mCenterX, 0, aPos.At(0x218), aPos.At(0x21c));
             }
             mOverlay.Resize(0, 0, mWidth, mHeight);
             mShelfTopPos = PosAt(aBase);
@@ -114,22 +115,35 @@ namespace Sexy
             }
         }
 
+        /// <summary>
+        /// Port: the side pillars are the iPad design's (0x138 / 0x140, from the portrait bookshelf's origin at
+        /// (mCenterX, 0)); the iPhone design has none. theX, theY: that origin in the drawing widget (the More
+        /// Games screen has them too).
+        /// </summary>
+        public static void DrawPillars(Graphics g, ScreenPos thePos, int theX, int theY)
+        {
+            if (!thePos.mIPadDesign)
+            {
+                return;
+            }
+            if (AtlasResourceBase.IMAGE_GROUP13_02 != null)
+            {
+                g.DrawImage(AtlasResourceBase.IMAGE_GROUP13_02, theX + thePos.At(0x138), theY + thePos.At(0x13c));
+            }
+            if (AtlasResourceBase.IMAGE_GROUP13_01 != null)
+            {
+                g.DrawImage(AtlasResourceBase.IMAGE_GROUP13_01, theX + thePos.At(0x140), theY + thePos.At(0x144));
+            }
+        }
+
         /// <summary>0x3372c: the shelf ends (portrait), then the shelf tops.</summary>
         public override void Draw(Graphics g)
         {
             base.Draw(g);
             ScreenPos aPos = mApp.mScreenPos;
-            // Port: the side pillars are the iPad design's (0x138 / 0x140); the iPhone design has none.
-            if (!mLandscape && aPos.mIPadDesign)
+            if (!mLandscape)
             {
-                if (AtlasResourceBase.IMAGE_GROUP13_02 != null)
-                {
-                    g.DrawImage(AtlasResourceBase.IMAGE_GROUP13_02, aPos.At(0x138), aPos.At(0x13c));
-                }
-                if (AtlasResourceBase.IMAGE_GROUP13_01 != null)
-                {
-                    g.DrawImage(AtlasResourceBase.IMAGE_GROUP13_01, aPos.At(0x140), aPos.At(0x144));
-                }
+                DrawPillars(g, aPos, 0, 0);
             }
             g.DrawImage(AtlasResourceBase.IMAGE_GROUP7_04, mShelfTopPos.mX, mShelfTopPos.mY);
             g.DrawImage(AtlasResourceBase.IMAGE_GROUP7_05, mSignPos.mX, mSignPos.mY);

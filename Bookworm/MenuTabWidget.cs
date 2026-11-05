@@ -82,7 +82,8 @@ namespace Sexy
         public override void AttachToManager(int theState, int theTarget, int theParam)
         {
             base.AttachToManager(theState, theTarget, theParam);
-            Resize(mApp.mScreenPos.At(0x38), mApp.mScreenPos.At(0x3c), mImage.mWidth, mImage.mHeight);
+            // Port (wide screens): the bar spans the screen; the tabs (ScreenPos) keep to the middle.
+            Resize(mApp.mScreenPos.At(0x38), mApp.mScreenPos.At(0x3c), System.Math.Max(mImage.mWidth, mApp.mWidth), mImage.mHeight);
             SetupSlide(SLIDE_FROM_BOTTOM, 0.5f);
             BookWormButton aBooks = mTabs[TAB_BOOKS];
             aBooks.mLabel = string.Format("{0}%", mApp.mCollectionator.GetCompletionPercent());
@@ -96,8 +97,11 @@ namespace Sexy
         public override void Draw(Graphics g)
         {
             base.Draw(g);
-            // Port: the iPad's full-width tab bar is centred in the iPhone design (ScreenPos.mWideImageX).
-            g.DrawImage(mImage, mImage.mWidth > mApp.mWidth ? mApp.mScreenPos.mWideImageX : 0, 0);
+            // Port: the iPad's full-width tab bar is centred in the iPhone design (ScreenPos.mWideImageX); on wide
+            // screens it is centred too, its end columns stretched to the screen's edges.
+            ScreenPos aPos = mApp.mScreenPos;
+            int aX = (mImage.mWidth > aPos.mDesignWidth ? aPos.mWideImageX : 0) + aPos.mCenterX;
+            ScreenPos.DrawStretchedEdges(g, mImage, aX, 0, mApp.mWidth);
         }
 
         /// <summary>vf94 (0x32914).</summary>

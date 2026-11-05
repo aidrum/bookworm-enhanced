@@ -187,6 +187,16 @@ namespace Sexy
             return v;
         }
 
+        /// <summary>
+        /// The font tool stored Latin-1 characters through a signed char, so the larger fonts (and every
+        /// font's kerning pairs) hold 0xA1-0xFF as 0xFFA1-0xFFFF. Without this, accented letters such as
+        /// the É in CAFÉ draw blank.
+        /// </summary>
+        private static char FixSignedChar(uint theCode)
+        {
+            return (char)(theCode >= 0xff80 && theCode <= 0xffff ? theCode & 0xff : theCode);
+        }
+
         private static uint PeekUInt32(BinaryReader r)
         {
             long aPos = r.BaseStream.Position;
@@ -264,7 +274,7 @@ namespace Sexy
                             for (int c = 0; c < numChars; c++)
                             {
                                 CharData cd;
-                                cd.mChar = (char)r.ReadUInt16();
+                                cd.mChar = FixSignedChar(r.ReadUInt16());
                                 r.ReadUInt16();
                                 cd.mImageRect = new TRect(r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32());
                                 cd.mOffset = new TPoint(r.ReadInt32(), r.ReadInt32());
@@ -277,11 +287,15 @@ namespace Sexy
                             for (int k = 0; k < numKern; k++)
                             {
                                 KerningInfo ki;
-                                ki.mKey = r.ReadUInt32();
+                                uint aKey = r.ReadUInt32();
+                                ki.mKey = ((uint)FixSignedChar(aKey >> 16) << 16) | FixSignedChar(aKey & 0xffff);
                                 ki.mOffset = r.ReadInt16();
                                 r.ReadUInt16();
                                 layer.mKerningData[k] = ki;
                             }
+                            // Both tables are binary searched; keep them sorted after the fix-up.
+                            Array.Sort(layer.mCharData, (a, b) => a.mChar.CompareTo(b.mChar));
+                            Array.Sort(layer.mKerningData, (a, b) => a.mKey.CompareTo(b.mKey));
                             layer.mColorMult = ReadColor(r);
                             layer.mColorAdd = ReadColor(r);
                             layer.mImagePath = GlobalStaticVars.GetResourceDir() + ReadString(r);

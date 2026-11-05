@@ -142,7 +142,8 @@ namespace Sexy
         /// iPhone design (between 16:10 tablets and 16:9 phones).</summary>
         public const double IPAD_FAMILY_MAX_ASPECT = 1.64;
 
-        /// <summary>Port: the squarest layout (the iPad's 4:3); squarer screens and landscape windows are pillarboxed.</summary>
+        /// <summary>Port: the iPad's 4:3; wider screens get a wider layout of the iPad design's height (pillarboxed
+        /// while the interface is turned to landscape).</summary>
         public const double MIN_ASPECT = 4.0 / 3.0;
 
         /// <summary>Port: the iPhone layouts' squarest (3:2, the iPhone 4), for the forced iPhone texture sets.</summary>
@@ -168,9 +169,11 @@ namespace Sexy
         /// Port: the layout for a screen or window of this size (the game is always portrait) with these
         /// textures. The iPad sets get the iPad design (768 / 1536 wide) below <see
         /// cref="IPAD_FAMILY_MAX_ASPECT"/> and the iPhone design (640 / 1280 wide) above it, the height
-        /// following the screen's shape (ScreenPos.Init lays either out for any height): from 4:3 (squarer and
-        /// landscape screens are pillarboxed) up to any height (no tallest layout: the extra height goes above
-        /// the board). The forced iPhone sets keep the iPhone design, from 3:2.
+        /// following the screen's shape (ScreenPos.Init lays either out for any height), up to any height (the
+        /// extra height goes above the board). Screens wider than 3:4 keep the iPad design's height and get
+        /// a wider layout (ScreenPos.mCenterX), except while the interface is turned to landscape (the
+        /// landscape bookshelf), when they are pillarboxed at 4:3. The forced iPhone sets keep the iPhone
+        /// design, from 3:2.
         /// </summary>
         public static Point LayoutFor(int theTextureSide, int theScreenWidth, int theScreenHeight)
         {
@@ -180,6 +183,12 @@ namespace Sexy
             {
                 aWidth = theTextureSide;
                 anAspect = System.Math.Max(IPHONE_MIN_ASPECT, anAspect);
+            }
+            else if (anAspect < MIN_ASPECT && !Landscape)
+            {
+                // Wider than 3:4: the iPad design keeps its 4:3 height and grows wider (ScreenPos centres it).
+                int aHeight = theTextureSide * 4 / 3;
+                return new Point((int)System.Math.Round(aHeight / anAspect), aHeight);
             }
             else if (anAspect < IPAD_FAMILY_MAX_ASPECT)
             {
@@ -224,7 +233,8 @@ namespace Sexy
             ChooseLayout(aWidth, aHeight);
             // Keep the window at the chosen layout's aspect (a forced phone layout gets a phone window).
             DefaultWindowHeight = aHeight;
-            DefaultWindowWidth = (int)((long)aHeight * ScreenWidth / ScreenHeight);
+            // Rounded, not truncated: a window a pixel narrower than the layout's shape left a band at the top.
+            DefaultWindowWidth = (int)System.Math.Round((double)aHeight * ScreenWidth / ScreenHeight);
         }
 
         public static float InvertAndScale(float x)

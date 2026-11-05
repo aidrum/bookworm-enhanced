@@ -26,6 +26,19 @@ namespace Sexy
         public int mWideImageX;
 
         /// <summary>
+        /// Port (wide screens): how far the design's own width (768 / 1536) sits from the left of a layout wider
+        /// than it (Constants.LayoutFor), half the extra width; 0 when the layout is no wider than the design.
+        /// The screens' places in the middle of the design are moved by it in Init (CENTRED_X).
+        /// </summary>
+        public int mCenterX;
+
+        /// <summary>Port (wide screens): all of the extra width, for what keeps to the right edge (RIGHT_X).</summary>
+        public int mRightX;
+
+        /// <summary>Port: the width the design's words were made for (the layout's, less the extra width).</summary>
+        public int mDesignWidth;
+
+        /// <summary>
         /// FUN_00042cd4 picked one of five fixed layouts from the screen's short and long sides. Port: lays out
         /// any portrait screen, from the texture set (theTextureSide: 768 / 1536 iPad, 320 / 640 iPhone) and the
         /// layout's size (Constants.LayoutFor).
@@ -100,15 +113,15 @@ namespace Sexy
                     // iPad-only landscape scenery around the centred shelf (0x100 moves by half the extra width).
                     aSlope = 0.5;
                 }
-                if (aSlope == 0.0 || anExtra == 0 || i >= FLOAT_WORD)
-                {
-                    mData[i] = aBase[i];
-                }
-                else if (anExtra > aWideExtra && System.Array.IndexOf(BOARD_ANCHORED, i * 4) >= 0)
+                if (i < FLOAT_WORD && anExtra > aWideExtra && System.Array.IndexOf(BOARD_ANCHORED, i * 4) >= 0)
                 {
                     // Taller than 16:9: these keep their 16:9 place relative to the board and Lex (which sit
                     // at the bottom, moving 1:1 with the height); only the space above grows.
                     mData[i] = aBase[i] + (int)System.Math.Round(aSlope * aWideExtra) + (anExtra - aWideExtra);
+                }
+                else if (aSlope == 0.0 || anExtra == 0 || i >= FLOAT_WORD)
+                {
+                    mData[i] = aBase[i];
                 }
                 else
                 {
@@ -121,6 +134,56 @@ namespace Sexy
                 // the centred shelf (0x100) is from the left; the 960 layout had no room for it (0).
                 mData[0x130 / 4] = theHeight - mData[0x100 / 4];
             }
+            // Port (wide screens): the design stays in the middle, the game selector's books go to the right edge
+            // and Lex at the menu stays at the left (his menu and off-screen places and his speech are not moved).
+            mDesignWidth = mIPadDesign && !Constants.Landscape ? 0x300 * aScale : theWidth;
+            mRightX = System.Math.Max(0, theWidth - mDesignWidth);
+            mCenterX = mRightX / 2;
+            foreach (int anOffset in CENTRED_X)
+            {
+                mData[anOffset / 4] += mCenterX;
+            }
+            foreach (int anOffset in RIGHT_X)
+            {
+                mData[anOffset / 4] += mRightX;
+            }
+        }
+
+        /// <summary>
+        /// Port: x words (byte offsets) of screen places that keep to the middle of a wide layout: the logo (0x00),
+        /// the menu tabs (0x40 ... 0x60, in the tab bar, which spans the screen), Lex on the board and entering it
+        /// (0x90, 0x98), the books, dialogs and help pages (0x1e0, 0x1f0, 0x200, 0x220, 0x2e0), the board (0x2d0)
+        /// and the board's balloons (0x230, 0x240, 0x260, 0x270), plus the bonus word banner's slide (0x190, 0x198,
+        /// in the board's full-screen overlay). The full-width images (swags, pedestal: 0x78) are centred by
+        /// SlideInImage; places inside the board or a screen are relative to it and stay.
+        /// </summary>
+        private static readonly int[] CENTRED_X =
+        {
+            0x00, 0x40, 0x48, 0x50, 0x58, 0x60, 0x90, 0x98, 0x190, 0x198,
+            0x1e0, 0x1f0, 0x200, 0x220, 0x2d0, 0x2e0, 0x230, 0x240, 0x260, 0x270
+        };
+
+        /// <summary>Port: x words that keep to the right edge of a wide layout: the game selector (0x08).</summary>
+        private static readonly int[] RIGHT_X = { 0x08 };
+
+        /// <summary>
+        /// Port (wide screens): a full-width image (backgrounds, the menu tab bar) at theX, its first and last
+        /// columns stretched out to the screen's edges (0 and theScreenWidth) where it does not reach them.
+        /// </summary>
+        public static void DrawStretchedEdges(Graphics g, Image theImage, int theX, int theY, int theScreenWidth)
+        {
+            int aWidth = theImage.mWidth;
+            int aHeight = theImage.mHeight;
+            g.DrawImage(theImage, theX, theY);
+            if (theX > 0)
+            {
+                g.DrawImage(theImage, new TRect(0, theY, theX, aHeight), new TRect(0, 0, 1, aHeight));
+            }
+            int aRight = theX + aWidth;
+            if (aRight < theScreenWidth)
+            {
+                g.DrawImage(theImage, new TRect(aRight, theY, theScreenWidth - aRight, aHeight), new TRect(aWidth - 1, 0, 1, aHeight));
+            }
         }
 
         /// <summary>
@@ -128,9 +191,11 @@ namespace Sexy
         /// the screen's height between the 960 and 1136 layouts: Lex on the board (0x94) and entering it (0x9c),
         /// the bonus word banner's stop (0x19c), and the speech balloons' tops (0x234, 0x244, 0x264; 0x254 already
         /// moves 1:1). Lex's menu place (0x84) and the board (0x2d4) move 1:1 with the height, so past 16:9 these
-        /// do too, and they stay where they were relative to Lex and the board instead of floating.
+        /// do too, and they stay where they were relative to Lex and the board instead of floating. The More Games
+        /// balloon's top (0x274) is fixed in both layouts (slope 0) but sits over Lex at the menu, so past 16:9 it
+        /// follows him the same way instead of staying pinned to the top of the screen.
         /// </summary>
-        private static readonly int[] BOARD_ANCHORED = { 0x94, 0x9c, 0x19c, 0x234, 0x244, 0x264 };
+        private static readonly int[] BOARD_ANCHORED = { 0x94, 0x9c, 0x19c, 0x234, 0x244, 0x264, 0x274 };
 
         /// <summary>The first of the two float words (0xfd, 0xfe).</summary>
         private const int FLOAT_WORD = 0xfd;

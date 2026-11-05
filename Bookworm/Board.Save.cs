@@ -164,6 +164,9 @@ namespace Sexy
                 return false;
             }
             mClockStart = Environment.TickCount;
+            // The touch is not saved: a restored selection was released, so the next tap must follow it
+            // (left at 0, "picking", any tile would add to the word).
+            mTouchMode = mSelection.Count > 0 ? 1 : 0;
             return true;
         }
 

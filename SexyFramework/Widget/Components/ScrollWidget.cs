@@ -275,7 +275,9 @@ namespace Sexy
                 mClientLastDown = GetClientWidgetAt(x, y);
                 mClientLastDown.mIsDown = true;
                 mClientLastDown.mIsOver = true;
-                mClientLastDown.MouseDown(x, y, theMagicCode);
+                // In the widget's own coordinates, as MouseDrag and MouseUp give them (the scroll offset included).
+                CGPoint b = GetAbsPos() - mClientLastDown.GetAbsPos();
+                mClientLastDown.MouseDown((int)(x + b.mX), (int)(y + b.mY), theMagicCode);
             }
         }
 
@@ -410,6 +412,10 @@ namespace Sexy
                 mClientLastDown = GetClientWidgetAt(touch);
                 mClientLastDown.mIsDown = true;
                 mClientLastDown.mIsOver = true;
+                // In the widget's own coordinates, as TouchMoved and TouchEnded give them.
+                CGPoint b = GetAbsPos() - mClientLastDown.GetAbsPos();
+                CGMaths.CGPointTranslate(ref touch.location, b.mX, b.mY);
+                CGMaths.CGPointTranslate(ref touch.previousLocation, b.mX, b.mY);
                 mClientLastDown.TouchBegan(touch);
             }
         }

@@ -7,7 +7,8 @@ namespace Sexy
     /// More Games screen with a web view). One tray per game, stacked without gaps: the tray background, the game's
     /// banner centred on it, the tray frame over both. Touching a tray lights it with the touch glow; letting go on
     /// it tells the listener (DialogButtonDepress(id, row)). The trays exist at the iPhone size only, so the rows
-    /// are drawn scaled by <see cref="mScale"/> (the layout's scale over the iPhone).
+    /// are drawn scaled by <see cref="mScale"/> (the layout's scale over the iPhone); banners made at the iPad's
+    /// size are drawn at half that (<see cref="BannerScale"/>).
     /// </summary>
     public class MoreGamesListWidget : Widget
     {
@@ -96,9 +97,19 @@ namespace Sexy
             return mRows[theRow].mLink;
         }
 
-        private void DrawScaled(Graphics g, Image theImage, int x, int y)
+        /// <summary>
+        /// Port: the scale a banner was made at over the iPhone tray. The original's banners are iPhone size,
+        /// cropped to their content and centred on the tray (1); the newer ones are made at the iPad's size, a
+        /// whole tray (640 x 200) with their own transparent margins (2).
+        /// </summary>
+        private int BannerScale(Image theImage)
         {
-            g.DrawImage(theImage, new TRect(x, y, theImage.mWidth * mScale, theImage.mHeight * mScale),
+            return mTrayImage == null ? 1 : System.Math.Max(1, theImage.mWidth / mTrayImage.mWidth);
+        }
+
+        private void DrawScaled(Graphics g, Image theImage, int x, int y, int theImageScale = 1)
+        {
+            g.DrawImage(theImage, new TRect(x, y, theImage.mWidth * mScale / theImageScale, theImage.mHeight * mScale / theImageScale),
                 new TRect(0, 0, theImage.mWidth, theImage.mHeight));
         }
 
@@ -114,8 +125,9 @@ namespace Sexy
                 DrawScaled(g, mTrayImage, aRect.mX, aRect.mY);
                 if (aRow.mImage != null)
                 {
-                    DrawScaled(g, aRow.mImage, (aRect.mWidth - aRow.mImage.mWidth * mScale) / 2 + aRect.mX,
-                        (aRect.mHeight - aRow.mImage.mHeight * mScale) / 2 + aRect.mY);
+                    int aBannerScale = BannerScale(aRow.mImage);
+                    DrawScaled(g, aRow.mImage, (aRect.mWidth - aRow.mImage.mWidth * mScale / aBannerScale) / 2 + aRect.mX,
+                        (aRect.mHeight - aRow.mImage.mHeight * mScale / aBannerScale) / 2 + aRect.mY, aBannerScale);
                 }
                 DrawScaled(g, mTrayOverlayImage, aRect.mX, aRect.mY);
                 g.PopState();

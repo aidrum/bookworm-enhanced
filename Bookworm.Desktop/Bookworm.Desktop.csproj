@@ -6,7 +6,13 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>Bookworm</AssemblyName>
+    <ApplicationIcon>Icons\icon.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Window/taskbar icon: MonoGame's SDL window loads the embedded "Icon.bmp" (tools/convert_icons.py). -->
+    <EmbeddedResource Include="Icons\Icon.bmp" LogicalName="Icon.bmp" />
+    <None Remove="Icons\**" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
   </ItemGroup>

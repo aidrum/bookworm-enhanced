@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Port: the app's label and package come from the project (ApplicationTitle, ApplicationId); the launcher
-  icon is @mipmap/icon (Resources, tools/convert_icons.py: adaptive on Android 8+, else the legacy one).
+  icon is @mipmap/icon (Resources, tools/convert_icons.py from app-icons: adaptive on Android 8+ from its
+  foreground and background layers, else the legacy one).
   The game is always laid out portrait but follows the device whichever way it is held (fullUser, which
   respects the system's rotation lock): turning it lays the game out again for the new shape (Main.OnResize;
   a landscape screen gets the portrait layout pillarboxed). Rotations are handled in place (configChanges).

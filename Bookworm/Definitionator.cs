@@ -30,7 +30,13 @@ namespace Sexy
             {
                 return;
             }
-            foreach (string aLine in Encoding.Latin1.GetString(aData).Split('\n'))
+            // The file is Windows-1252: its curly quotes (0x91-0x94) and dashes (0x96, 0x97) are control
+            // characters in Latin-1 with no glyph in any font, so they'd draw blank. Use plain ones.
+            string aText = Encoding.Latin1.GetString(aData)
+                .Replace('\u0091', '\'').Replace('\u0092', '\'')
+                .Replace('\u0093', '"').Replace('\u0094', '"')
+                .Replace('\u0096', '-').Replace('\u0097', '-');
+            foreach (string aLine in aText.Split('\n'))
             {
                 if (aLine.Length == 0)
                 {

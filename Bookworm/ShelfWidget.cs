@@ -100,11 +100,20 @@ namespace Sexy
                 mListener.ShelfPicked(mId, aPressed);
             }
         }
+
+        /// <summary>The scroller took the touch (as MoreGamesListWidget, 0x44a6e): the glow goes, nothing is picked.</summary>
+        public override void TouchesCanceled()
+        {
+            base.TouchesCanceled();
+            mApp.HideTouchGlow();
+            mPressed = -1;
+            mInside = false;
+        }
     }
 
     /// <summary>
     /// Sexy::CollectionShelfWidget (0x391ac): the nine collection books, drawn once into an image (0x393c0): an
-    /// opened book's spine (images 0x274c+) is filled from the left with its colour (0x2756+, or 0x275f+ when
+    /// opened book's spine (images 0x274d+) is filled from the left with its colour (0x2756+, or 0x275f+ when
     /// complete) by the share of words found, with its name; an unopened one is plain (IMAGE_GROUP3_13) and can't
     /// be picked. Stacked spines in landscape (states 13-15); otherwise turned upright (a quarter turn, the fill
     /// rising from the bottom).
@@ -112,6 +121,12 @@ namespace Sexy
     public class CollectionShelfWidget : ShelfWidget
     {
         public const int BOOKS = 9;
+
+        /// <summary>
+        /// The first opened spine's image id (0x274d-0x2755, all 322 x 52 at iPad Retina). 0x274c before them is
+        /// the bookshelf's landscape side image (IMAGE_GROUP31_04, 52 x 486), not a spine.
+        /// </summary>
+        private const int SPINE_ID = 0x274d;
 
         /// <summary>The fill text colours by book (0x136e50); a complete book's is white (0x136d60).</summary>
         private static readonly Color[] BOOK_COLORS =
@@ -151,7 +166,7 @@ namespace Sexy
         {
             int aWidth = 0;
             int aHeight = 10;
-            for (int anId = 0x274c; anId <= 0x2755; anId++)
+            for (int anId = SPINE_ID; anId < SPINE_ID + BOOKS; anId++)
             {
                 Image aSpine = AtlasResourceBase.GetImageById(anId);
                 aWidth = Math.Max(aWidth, aSpine.mWidth);
@@ -177,7 +192,7 @@ namespace Sexy
                 else
                 {
                     aName = aBook.mName.ToUpperInvariant();
-                    aSpine = AtlasResourceBase.GetImageById(0x274c + i);
+                    aSpine = AtlasResourceBase.GetImageById(SPINE_ID + i);
                     mOpened[i] = true;
                 }
                 bool aComplete = aFound == aTotal;

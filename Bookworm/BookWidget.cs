@@ -55,10 +55,14 @@ namespace Sexy
             DrawBook(g, mBookImage, new TRect(0, 0, mWidth, mHeight));
         }
 
-        /// <summary>FUN_0003a864: as wide as the book, centred in theRect, from 10 below its top.</summary>
+        /// <summary>
+        /// FUN_0003a864: as wide as the book, centred in theRect, from 10 below its top. The original ignored
+        /// the rect's x (0 in every layout); port: it is added, as wide layouts move the rect to the middle
+        /// (ScreenPos.mCenterX).
+        /// </summary>
         public void PlaceIn(TRect theRect)
         {
-            Resize((theRect.mWidth - mBookImage.mWidth) / 2, theRect.mY + 10, mBookImage.mWidth, theRect.mHeight - 10);
+            Resize(theRect.mX + (theRect.mWidth - mBookImage.mWidth) / 2, theRect.mY + 10, mBookImage.mWidth, theRect.mHeight - 10);
         }
     }
 }

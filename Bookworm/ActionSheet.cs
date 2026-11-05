@@ -78,7 +78,7 @@ namespace Sexy
             {
                 ScreenPos aPos = mApp.mScreenPos;
                 mMessage = new FancyTextWidget();
-                mMessage.Resize(0, 0, mApp.mWidth - aPos.At(0x360) - aPos.At(0x368), 0);
+                mMessage.Resize(0, 0, aPos.mDesignWidth - aPos.At(0x360) - aPos.At(0x368), 0);
                 AddWidget(mMessage);
             }
             return mMessage;
@@ -105,8 +105,9 @@ namespace Sexy
         private void Layout()
         {
             ScreenPos aPos = mApp.mScreenPos;
-            int aLeft = aPos.At(0x360);
-            int aWidth = mApp.mWidth - aLeft - aPos.At(0x368);
+            // Port (wide screens): the buttons keep to the design's width, centred.
+            int aLeft = aPos.At(0x360) + aPos.mCenterX;
+            int aWidth = aPos.mDesignWidth - aPos.At(0x360) - aPos.At(0x368);
             mDimRect = new TRect(0, 0, mApp.mWidth, mApp.mHeight);
             mWidth = mApp.mWidth;
             mHeight = aPos.At(0x364) + mApp.mHeight;
@@ -199,8 +200,11 @@ namespace Sexy
             g.SetColorizeImages(true);
             g.FillRect(mDimRect);
             g.SetColorizeImages(false);
-            // Port: the iPad's backdrop is centred in the iPhone design (ScreenPos.mWideImageX).
-            g.DrawImage(mBackground, mBackground.mWidth > mApp.mWidth ? mApp.mScreenPos.mWideImageX : 0, mDimRect.mHeight);
+            // Port: the iPad's backdrop is centred in the iPhone design (ScreenPos.mWideImageX); on wide screens it
+            // is centred too, its end columns stretched to the screen's edges.
+            ScreenPos aPos = mApp.mScreenPos;
+            int aX = (mBackground.mWidth > aPos.mDesignWidth ? aPos.mWideImageX : 0) + aPos.mCenterX;
+            ScreenPos.DrawStretchedEdges(g, mBackground, aX, mDimRect.mHeight, mApp.mWidth);
         }
     }
 }

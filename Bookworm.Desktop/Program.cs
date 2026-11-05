@@ -26,7 +26,7 @@ namespace Bookworm.Desktop
         }
 
         /// <summary>
-        /// Where saves live when SEXY_STORAGE_DIR isn't set: next to the executable on Windows; the user's
+        /// Where saves live when SEXY_STORAGE_DIR isn't set: a userdata folder next to the executable on Windows; the user's
         /// application data folder on macOS (a .app bundle is read-only) and Linux (an AppImage is too).
         /// </summary>
         private static string GetDefaultStorageDir()
@@ -41,7 +41,7 @@ namespace Bookworm.Desktop
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData,
                     Environment.SpecialFolderOption.Create), "Bookworm Enhanced");
             }
-            return AppContext.BaseDirectory;
+            return Path.Combine(AppContext.BaseDirectory, "userdata");
         }
 
         /// <summary>In a macOS .app the game data lives in Contents/Resources/Content.</summary>

@@ -1097,6 +1097,9 @@ namespace Sexy
 
         public ScreenScales mScreenScales = new ScreenScales();
 
+        /// <summary>Port: the colour the frame is cleared to, seen in the letterbox around the layout (Main.Draw).</summary>
+        public Microsoft.Xna.Framework.Color mClearColor = Microsoft.Xna.Framework.Color.Black;
+
         public readonly string applicationStoragePath;
 
         public object saveStateLock = new object();

@@ -244,7 +244,7 @@ namespace Sexy
             mScreens[3] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_00, new TPoint(mScreenPos.At(0), mScreenPos.At(4)), SlideInWidget.SLIDE_FROM_TOP);
             mScreens[4] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_01, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP);
             mScreens[5] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_02, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP);
-            mScreens[6] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_14, new TPoint(mScreenPos.At(0x78), mScreenPos.At(0x7c)), SlideInWidget.SLIDE_FROM_BOTTOM);
+            mScreens[6] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_14, new TPoint(mScreenPos.At(0x78), mScreenPos.At(0x7c)), SlideInWidget.SLIDE_FROM_BOTTOM) { mStretchEdges = false };
             mScreens[SCREEN_MENU_TABS] = new MenuTabWidget(this);
             mScreens[SCREEN_GAME_SELECTOR] = new BWGameSelector(this);
             mScreens[SCREEN_STATS] = new FameWidget(this);

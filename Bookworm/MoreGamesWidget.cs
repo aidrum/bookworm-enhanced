@@ -52,6 +52,7 @@ namespace Sexy
             mTitleProxy = new ProxyWidget(this);
             mTitleProxy.mMouseVisible = false;
             AddWidget(mTitleProxy);
+            mClip = false;
         }
 
         public override void Dispose()
@@ -125,6 +126,7 @@ namespace Sexy
             int aWidth = OLD_WIDTH * s;
             int aTop = anOptions.mY + FRAME_TOP * s;
             Resize((mApp.mWidth - aWidth) / 2, aTop, aWidth, anOptions.mY + anOptions.mHeight + FRAME_BOTTOM * s - aTop);
+            mRestX = mX;
             if (mList.mScale != s)
             {
                 mList.SetScale(s);
@@ -135,6 +137,22 @@ namespace Sexy
             mScroll.FlashIndicators();
             SetupSlide(SLIDE_FROM_BOTTOM, 0.5f);
         }
+
+        /// <summary>
+        /// Port: the Books screen's side pillars (BookshelfWidget.DrawPillars) beside the frame, under the list;
+        /// they lie outside the widget, so it does not clip (mClip, set in the constructor).
+        /// </summary>
+        public override void Draw(Graphics g)
+        {
+            base.Draw(g);
+            // Placed against where the screen comes to rest (not where it is now), so they slide with it; the
+            // left pillar's top (and the right one's by as much) level with the title at the frame's top.
+            ScreenPos aPos = mApp.mScreenPos;
+            BookshelfWidget.DrawPillars(g, aPos, aPos.mCenterX - mRestX, -aPos.At(0x13c));
+        }
+
+        /// <summary>Port: the widget's place once slid in (AttachToManager), which the pillars are drawn against.</summary>
+        private int mRestX;
 
         /// <summary>InterfaceTransactionEnd (0x43388): in place in state 8, Lex presents the blurb.</summary>
         public override void InterfaceStateDone()

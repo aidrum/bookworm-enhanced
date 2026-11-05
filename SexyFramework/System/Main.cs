@@ -197,6 +197,9 @@ namespace Sexy
 
         private Point mWindowedSize;
 
+        /// <summary>Port: whether the interface was turned to landscape when full screen was entered.</summary>
+        private bool mWindowedLandscape;
+
         /// <summary>
         /// Switches between a window and borderless full screen at the desktop resolution (no mode change),
         /// restoring the window size on the way back.
@@ -207,6 +210,7 @@ namespace Sexy
             if (!aManager.IsFullScreen)
             {
                 mWindowedSize = new Point(Window.ClientBounds.Width, Window.ClientBounds.Height);
+                mWindowedLandscape = Constants.Landscape;
                 DisplayMode aMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
                 aManager.HardwareModeSwitch = false;
                 aManager.PreferredBackBufferWidth = aMode.Width;
@@ -218,8 +222,8 @@ namespace Sexy
                 aManager.IsFullScreen = false;
                 if (mWindowedSize.X > 0 && mWindowedSize.Y > 0)
                 {
-                    // Turned while full screen: the window comes back turned too.
-                    if ((mWindowedSize.X > mWindowedSize.Y) != Constants.Landscape)
+                    // Turned while full screen: the window comes back turned too (a wide window is not turned).
+                    if (mWindowedLandscape != Constants.Landscape)
                     {
                         mWindowedSize = new Point(mWindowedSize.Y, mWindowedSize.X);
                     }
@@ -386,7 +390,7 @@ namespace Sexy
             }
             lock (ResourceManager.DrawLocker)
             {
-                base.GraphicsDevice.Clear(Color.Black);
+                base.GraphicsDevice.Clear(GlobalStaticVars.gSexyAppBase.mClearColor);
                 long aStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 GlobalStaticVars.gSexyAppBase.DrawGame(gameTime);
                 base.Draw(gameTime);

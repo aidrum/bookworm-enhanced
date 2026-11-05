@@ -7,22 +7,24 @@ namespace Sexy {
 
         public void Init(int screenWidth, int screenHeight, int virtualWidth, int virtualHeight) 
         {
+            // Port: exact (not integer) sizes, so a window a pixel off the layout's shape is not banded by
+            // a truncated height or width.
             double W, H;
-            if ((screenHeight * virtualWidth) >= (screenWidth * virtualHeight))
+            if ((long)screenHeight * virtualWidth >= (long)screenWidth * virtualHeight)
             {
                 W = screenWidth;
-                H = (virtualHeight * screenWidth / virtualWidth);
+                H = (double)virtualHeight * screenWidth / virtualWidth;
                 mTransX = 0;
-                mTransY = (int)((screenHeight - H) / 2);
-                mScaleFactor = (float)(W) / virtualWidth;
+                mTransY = (int)Math.Round((screenHeight - H) / 2);
+                mScaleFactor = (float)(W / virtualWidth);
             }
             else
             {
-                W = (virtualWidth * screenHeight / virtualHeight);
+                W = (double)virtualWidth * screenHeight / virtualHeight;
                 H = screenHeight;
-                mTransX = (int)((screenWidth - W) / 2);
+                mTransX = (int)Math.Round((screenWidth - W) / 2);
                 mTransY = 0;
-                mScaleFactor = (float)(H) / virtualHeight;
+                mScaleFactor = (float)(H / virtualHeight);
             }
             mWidth = screenWidth;
             mHeight = screenHeight;
