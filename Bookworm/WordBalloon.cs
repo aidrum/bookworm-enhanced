@@ -365,6 +365,8 @@ namespace Sexy
         private void Prepare(TRect theRect, Image theBackground, bool theBox)
         {
             mTimer = 0;
+            // Port: with Lex on the menu pages past 16:9 (BookWormApp.GetLexLift).
+            theRect.mY -= mApp.GetLexLift(mApp.mInterfaceState);
             mNextRect = theRect;
             if (mNextImage != null && (theRect.mWidth > mNextImage.mWidth || theRect.mHeight > mNextImage.mHeight))
             {

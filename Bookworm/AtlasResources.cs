@@ -25,9 +25,26 @@ namespace Sexy
         /// </summary>
         protected static void UnpackImages(Image theAtlas, int[,] theTable)
         {
+            // Port: the sheets leave 1px (iPad Retina: sometimes none) between entries, so a scaled draw filtered
+            // the gap or the neighbour into an entry's edge: 1px seams. The sheet is repacked with a 1px border
+            // around each entry copied from its own edge (the sheet itself is never drawn whole).
+            List<Microsoft.Xna.Framework.Rectangle> aRects = new List<Microsoft.Xna.Framework.Rectangle>();
             for (int i = 0; i < theTable.GetLength(0); i++)
             {
-                Image anImage = new Image(theAtlas, theTable[i, 1], theTable[i, 2], theTable[i, 3], theTable[i, 4]);
+                aRects.Add(new Microsoft.Xna.Framework.Rectangle(theTable[i, 1], theTable[i, 2], theTable[i, 3], theTable[i, 4]));
+            }
+            Microsoft.Xna.Framework.Graphics.Texture2D aRepacked = ImageFileLoader.RepackPadded(theAtlas.Texture, aRects, out Microsoft.Xna.Framework.Point[] aPositions);
+            if (aRepacked != null)
+            {
+                Microsoft.Xna.Framework.Graphics.Texture2D anOld = theAtlas.Texture;
+                theAtlas.Reset(aRepacked);
+                anOld.Dispose();
+            }
+            for (int i = 0; i < theTable.GetLength(0); i++)
+            {
+                int aX = aRepacked != null ? aPositions[i].X : theTable[i, 1];
+                int aY = aRepacked != null ? aPositions[i].Y : theTable[i, 2];
+                Image anImage = new Image(theAtlas, aX, aY, theTable[i, 3], theTable[i, 4]);
                 anImage.mNumRows = theTable[i, 5];
                 anImage.mNumCols = theTable[i, 6];
                 if (theTable[i, 7] != 0)

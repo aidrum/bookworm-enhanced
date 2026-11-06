@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Android.App;
+using Android.Hardware;
 using Android.Content;
 using Android.Graphics;
 using Android.OS;
@@ -15,9 +16,21 @@ namespace Bookworm.Android
     // Declared in AndroidManifest.xml (not with [Activity]) under this Java name; the label is the app's
     // (ApplicationTitle).
     [Register("bookworm.android.GameActivity")]
-    public class GameActivity : Microsoft.Xna.Framework.AndroidGameActivity
+    public class GameActivity : Microsoft.Xna.Framework.AndroidGameActivity, ISensorEventListener
     {
         private Sexy.Main mGame;
+
+        private SensorManager mSensorManager;
+
+        private Sensor mAccelerometer;
+
+        /// <summary>The first sample's sensor time (ns), so the game gets small times (it keeps them as floats).</summary>
+        private long mSensorTimeBase = -1;
+
+        /// <summary>Samples waiting past this many are dropped (the game is not updating).</summary>
+        private const int MAX_PENDING_SAMPLES = 64;
+
+        private const double STANDARD_GRAVITY = 9.80665;
 
         protected override void OnCreate(Bundle bundle)
         {
@@ -73,6 +86,9 @@ namespace Bookworm.Android
                     Toast.MakeText(this, "No app can open " + theUrl, ToastLength.Long).Show();
                 }
             });
+            // Shaking the device scrambles, as on iOS: the accelerometer feeds BookWormApp's shake detector.
+            mSensorManager = (SensorManager)GetSystemService(SensorService);
+            mAccelerometer = mSensorManager?.GetDefaultSensor(SensorType.Accelerometer);
             mGame = new Sexy.Main();
             mGame.applicationStoragePath = saveDir;
             View view = (View)mGame.Services.GetService(typeof(View));
@@ -99,6 +115,52 @@ namespace Bookworm.Android
             {
                 Sexy.Main.BackRequested = true;
             }
+        }
+
+        protected override void OnResume()
+        {
+            base.OnResume();
+            if (mAccelerometer != null)
+            {
+                mSensorManager.RegisterListener(this, mAccelerometer, SensorDelay.Game);
+            }
+        }
+
+        protected override void OnPause()
+        {
+            mSensorManager?.UnregisterListener(this);
+            base.OnPause();
+        }
+
+        public void OnAccuracyChanged(Sensor sensor, [GeneratedEnum] SensorStatus accuracy)
+        {
+        }
+
+        /// <summary>
+        /// An accelerometer sample, in m/s² along the device's axes (x right, y up, z out of the screen; gravity
+        /// reads +9.8 upwards). iOS gave g with gravity reading -1 downwards, hence the -1/9.8.
+        /// </summary>
+        public void OnSensorChanged(SensorEvent e)
+        {
+            if (e?.Sensor?.Type != SensorType.Accelerometer || e.Values == null || e.Values.Count < 3)
+            {
+                return;
+            }
+            if (mSensorTimeBase < 0)
+            {
+                mSensorTimeBase = e.Timestamp;
+            }
+            if (Sexy.Main.AccelerometerSamples.Count >= MAX_PENDING_SAMPLES)
+            {
+                return;
+            }
+            Sexy.Main.AccelerometerSamples.Enqueue(new double[]
+            {
+                (e.Timestamp - mSensorTimeBase) / 1e9,
+                -e.Values[0] / STANDARD_GRAVITY,
+                -e.Values[1] / STANDARD_GRAVITY,
+                -e.Values[2] / STANDARD_GRAVITY
+            });
         }
 
         public override void OnWindowFocusChanged(bool hasFocus)

@@ -124,7 +124,7 @@ namespace Sexy
             base.Relayout();
             ScreenPos aPos = mApp.mScreenPos;
             int anOffset = mInterfaceTarget == 1 ? 0x80 : mInterfaceTarget == 2 ? 0x90 : 0x88;
-            mTimelinePos = new TPoint(aPos.At(anOffset), aPos.At(anOffset + 4));
+            mTimelinePos = new TPoint(aPos.At(anOffset), aPos.At(anOffset + 4) - (mInterfaceTarget == 2 ? mApp.GetLexLift(mInterfaceState) : 0));
             Move(mTimelinePos.mX, mTimelinePos.mY);
         }
 
@@ -209,8 +209,10 @@ namespace Sexy
             ScreenPos aPos = mApp.mScreenPos;
             TPoint aMenu = new TPoint(aPos.At(0x80), aPos.At(0x84));
             TPoint anOffLeft = new TPoint(aPos.At(0x88), aPos.At(0x8c));
-            TPoint aBoard = new TPoint(aPos.At(0x90), aPos.At(0x94));
-            TPoint aBoardEntry = new TPoint(aPos.At(0x98), aPos.At(0x9c));
+            // Port: on the menu pages past 16:9, above the page (BookWormApp.GetLexLift).
+            int aLift = mApp.GetLexLift(theState);
+            TPoint aBoard = new TPoint(aPos.At(0x90), aPos.At(0x94) - aLift);
+            TPoint aBoardEntry = new TPoint(aPos.At(0x98), aPos.At(0x9c) - aLift);
             TPoint[] aKeys = new TPoint[4];
             int[] anAlphas = new int[4];
             int aDuration = 0;

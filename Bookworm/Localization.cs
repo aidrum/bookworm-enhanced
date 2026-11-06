@@ -135,7 +135,7 @@ namespace Sexy
             { "LEVEL UP!", "¡PASAS DE NIVEL!" },
             // MAKE_X_FOR_BONUS ("Haz la palabra “%s” para conseguir puntos de bonificación.")
             { "Make the word", "Haz la palabra" },
-            { "for bonus points!", "para conseguir puntos de bonificación." },
+            { "for bonus points!", "para puntos bonus!" },
             // X_BONUS
             { "+{0} BONUS!", "+{0} ¡BONIFICACIÓN!" },
             // YOUR_RANK, NEXT_RANK_AT + PTS, TIME, LEVEL_X, TOTAL

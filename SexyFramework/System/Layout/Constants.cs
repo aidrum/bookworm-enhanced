@@ -219,7 +219,8 @@ namespace Sexy
 
         /// <summary>
         /// Port: the desktop's choice. The window opens portrait, as tall as fits the monitor, at the iPad's
-        /// 4:3 (the widest of the original's screens), so the layout follows the window's size.
+        /// 4:3 (the widest of the original's screens), so the layout follows the window's size. The textures
+        /// are picked for the whole monitor (as the game would show full screen), not the window.
         /// </summary>
         public static void ChooseDesktopLayout(int theMonitorWidth, int theMonitorHeight)
         {
@@ -231,6 +232,13 @@ namespace Sexy
                 aHeight = aWidth * 4 / 3;
             }
             ChooseLayout(aWidth, aHeight);
+            if (!LayoutForced)
+            {
+                // The texture set follows the monitor, not the window: the window can be maximized or made
+                // full screen at any time, but the textures are loaded once (RelayoutFor keeps them).
+                PickLayout(theMonitorWidth, theMonitorHeight);
+                BackBufferSize = LayoutFor(TextureSide, aWidth, aHeight);
+            }
             // Keep the window at the chosen layout's aspect (a forced phone layout gets a phone window).
             DefaultWindowHeight = aHeight;
             // Rounded, not truncated: a window a pixel narrower than the layout's shape left a band at the top.

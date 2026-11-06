@@ -150,6 +150,9 @@ namespace Sexy
 
             public int mPanning;
 
+            /// <summary>Port: the sound was loaded from a "&lt;lang&gt;.lproj" folder (see ReloadLocalizedSounds).</summary>
+            public bool mLocalized;
+
             public SoundRes()
             {
                 mType = ResType.ResType_Sound;
@@ -518,6 +521,38 @@ namespace Sexy
         /// are loaded. Sounds and fonts are the same in every language and are kept. Returns the
         /// groups whose images were reloaded, so their Res fields can be extracted again.
         /// </summary>
+        /// <summary>
+        /// Port: after ContentFS.Language changed, loads again (into the same sound ids) the loaded sounds that
+        /// have a copy in a "&lt;lang&gt;.lproj" folder, now or before (Bookworm's Spanish Lex voice). The old
+        /// sound is not disposed, so an instance still playing it ends normally.
+        /// </summary>
+        public void ReloadLocalizedSounds()
+        {
+            foreach (BaseRes baseRes in mSoundMap.Values)
+            {
+                SoundRes res = (SoundRes)baseRes;
+                string aPath = GetResourceDir() + res.mPath;
+                bool aLocalized = ContentFS.IsLocalized(aPath);
+                if (res.mSoundId < 0 || (!aLocalized && !res.mLocalized))
+                {
+                    continue;
+                }
+                if (!mApp.mSoundManager.LoadSound((uint)res.mSoundId, aPath))
+                {
+                    continue;
+                }
+                if (res.mVolume >= 0.0)
+                {
+                    mApp.mSoundManager.SetBaseVolume((uint)res.mSoundId, res.mVolume);
+                }
+                if (res.mPanning != 0)
+                {
+                    mApp.mSoundManager.SetBasePan((uint)res.mSoundId, res.mPanning);
+                }
+                res.mLocalized = aLocalized;
+            }
+        }
+
         public List<string> ReloadLocalizedImages()
         {
             DoDeferredDeletes();
@@ -642,6 +677,7 @@ namespace Sexy
                 mApp.mSoundManager.SetBasePan((uint)soundId, theRes.mPanning);
             }
             theRes.mSoundId = soundId;
+            theRes.mLocalized = ContentFS.IsLocalized(GetResourceDir() + theRes.mPath);
             ResourceLoadedHook(theRes);
             return true;
         }

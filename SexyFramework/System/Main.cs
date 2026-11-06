@@ -30,6 +30,13 @@ namespace Sexy
         public static volatile bool BackRequested;
 
         /// <summary>
+        /// Port: accelerometer samples from the platform (Android's sensor; the iOS app got them from
+        /// UIAccelerometer), in iOS units (g, with UIAcceleration's signs) and seconds. Handed to
+        /// SexyAppBase.AccelerometerDidAccelerate on the next update, on the game thread (shaking scrambles).
+        /// </summary>
+        public static readonly System.Collections.Concurrent.ConcurrentQueue<double[]> AccelerometerSamples = new System.Collections.Concurrent.ConcurrentQueue<double[]>();
+
+        /// <summary>
         /// Set by a platform host to close the app itself. On Android, Game.Exit only moves the task to
         /// the back, so the still-running game kept exiting every time it was reopened.
         /// </summary>
@@ -457,6 +464,10 @@ namespace Sexy
             {
                 BackRequested = false;
                 app.BackButtonPress();
+            }
+            while (AccelerometerSamples.TryDequeue(out double[] aSample))
+            {
+                app.AccelerometerDidAccelerate(aSample[0], aSample[1], aSample[2], aSample[3]);
             }
             bool began = false;
             foreach (TouchLocation touchLocation in TouchPanel.GetState())

@@ -119,6 +119,86 @@ namespace Sexy
             return result;
         }
 
+        /// <summary>
+        /// Port: copies the entries (theRects) of an atlas whose entries are packed too tight for ExtrudeEdges
+        /// (Bookworm's sheets leave 1px or none between them, so the gap pixel is shared and left alone) into
+        /// a new texture, shelf-packed with a 1px border around each copied from the entry's own edge. Filtering
+        /// at an entry's edge then never reads transparency or a neighbour: no seams when scaled. thePositions
+        /// gets each entry's new top-left. Null (and the old layout kept) if the texture is not SurfaceFormat.Color.
+        /// </summary>
+        public static Texture2D RepackPadded(Texture2D theTexture, System.Collections.Generic.List<Microsoft.Xna.Framework.Rectangle> theRects, out Microsoft.Xna.Framework.Point[] thePositions)
+        {
+            thePositions = null;
+            if (theTexture == null || theTexture.Format != SurfaceFormat.Color || theRects.Count == 0)
+            {
+                return null;
+            }
+            int sw = theTexture.Width;
+            int sh = theTexture.Height;
+            uint[] src = new uint[sw * sh];
+            theTexture.GetData(src);
+            // Shelf packing, tallest first; a rect cut more than once is packed once.
+            int aWidth = sw;
+            foreach (Microsoft.Xna.Framework.Rectangle r in theRects)
+            {
+                aWidth = Math.Max(aWidth, r.Width + 2);
+            }
+            int[] anOrder = new int[theRects.Count];
+            for (int i = 0; i < anOrder.Length; i++)
+            {
+                anOrder[i] = i;
+            }
+            Array.Sort(anOrder, (a, b) => theRects[a].Height != theRects[b].Height ? theRects[b].Height - theRects[a].Height : theRects[b].Width - theRects[a].Width);
+            Microsoft.Xna.Framework.Point[] aPositions = new Microsoft.Xna.Framework.Point[theRects.Count];
+            System.Collections.Generic.Dictionary<Microsoft.Xna.Framework.Rectangle, Microsoft.Xna.Framework.Point> aPlaced = new System.Collections.Generic.Dictionary<Microsoft.Xna.Framework.Rectangle, Microsoft.Xna.Framework.Point>();
+            int x = 0;
+            int y = 0;
+            int aRowHeight = 0;
+            foreach (int i in anOrder)
+            {
+                Microsoft.Xna.Framework.Rectangle r = theRects[i];
+                if (aPlaced.TryGetValue(r, out Microsoft.Xna.Framework.Point aDone))
+                {
+                    aPositions[i] = aDone;
+                    continue;
+                }
+                if (r.Width <= 0 || r.Height <= 0)
+                {
+                    continue;
+                }
+                if (x + r.Width + 2 > aWidth)
+                {
+                    x = 0;
+                    y += aRowHeight;
+                    aRowHeight = 0;
+                }
+                aPositions[i] = new Microsoft.Xna.Framework.Point(x + 1, y + 1);
+                aPlaced[r] = aPositions[i];
+                x += r.Width + 2;
+                aRowHeight = Math.Max(aRowHeight, r.Height + 2);
+            }
+            int aHeight = Math.Max(1, y + aRowHeight);
+            uint[] dst = new uint[aWidth * aHeight];
+            foreach (System.Collections.Generic.KeyValuePair<Microsoft.Xna.Framework.Rectangle, Microsoft.Xna.Framework.Point> entry in aPlaced)
+            {
+                Microsoft.Xna.Framework.Rectangle r = entry.Key;
+                Microsoft.Xna.Framework.Point p = entry.Value;
+                for (int dy = -1; dy <= r.Height; dy++)
+                {
+                    int sy = Math.Clamp(r.Y + Math.Clamp(dy, 0, r.Height - 1), 0, sh - 1);
+                    for (int dx = -1; dx <= r.Width; dx++)
+                    {
+                        int sx = Math.Clamp(r.X + Math.Clamp(dx, 0, r.Width - 1), 0, sw - 1);
+                        dst[(p.Y + dy) * aWidth + p.X + dx] = src[sy * sw + sx];
+                    }
+                }
+            }
+            Texture2D aTexture = new Texture2D(theTexture.GraphicsDevice, aWidth, aHeight, false, SurfaceFormat.Color);
+            aTexture.SetData(dst);
+            thePositions = aPositions;
+            return aTexture;
+        }
+
         private static void ExtrudeEdges(uint[] pixels, int w, int h, System.Collections.Generic.List<Microsoft.Xna.Framework.Rectangle> theRects)
         {
             const int FREE = -1;

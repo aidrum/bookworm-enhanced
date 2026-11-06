@@ -330,6 +330,8 @@ namespace Sexy
         public void ChangeLanguage()
         {
             Constants.LanguageIndex anOld = Constants.Language;
+            // The found collection words are kept per language: write the old language's first.
+            mCollectionator.Save();
             Constants.Language = Localization.LANGUAGES[(Localization.CurrentIndex() + 1) % Localization.LANGUAGES.Length];
             if (!LoadWords())
             {
@@ -338,6 +340,9 @@ namespace Sexy
             }
             RegistryWriteInteger("Language", (int)Constants.Language);
             Localization.LoadStrings(this);
+            // Lex's voice: the PC Spanish version's clips are in es.lproj/sounds.
+            mResourceManager.ReloadLocalizedSounds();
+            mCollectionator.ReloadBooks();
             foreach (InterfaceWidget aScreen in mScreens)
             {
                 if (aScreen is WordBookWidget aBook && aBook.mContinueButton != null)
@@ -347,6 +352,20 @@ namespace Sexy
             }
             // The board swaps in its bonus words for the new language.
             mBoard?.SyncBonusWordLanguage();
+        }
+
+        /// <summary>
+        /// Port (dynamic aspect): how much higher than his board spot Lex (and his balloon) go in theState: the
+        /// menu pages that put him at the board spot without the board (Stats, Options, More Games) are lifted
+        /// on screens taller than 16:9 (ScreenPos.mPageLift); 0 elsewhere.
+        /// </summary>
+        public int GetLexLift(int theState)
+        {
+            if (theState < 0 || theState >= INTERFACE_TARGETS.GetLength(0))
+            {
+                return 0;
+            }
+            return INTERFACE_TARGETS[theState, SCREEN_LEX] == 2 && INTERFACE_TARGETS[theState, SCREEN_BOARD] == 0 ? mScreenPos.mPageLift : 0;
         }
 
         /// <summary>0x1200c: a screen's move ended; when none is left moving, all of them are told the state is reached.</summary>

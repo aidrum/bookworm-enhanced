@@ -128,6 +128,9 @@ namespace Sexy
         /// </summary>
         private const int SPINE_ID = 0x274d;
 
+        /// <summary>Port: the part of a spine's width (in percent, between its end decorations) a name may use.</summary>
+        private const int SPINE_TEXT_PERCENT = 80;
+
         /// <summary>The fill text colours by book (0x136e50); a complete book's is white (0x136d60).</summary>
         private static readonly Color[] BOOK_COLORS =
         {
@@ -210,7 +213,16 @@ namespace Sexy
                 {
                     g.SetFont(mFont);
                     g.SetColor(aColor);
-                    g.DrawString(aName, (aSpineWidth - mFont.StringWidth(aName)) / 2, aY + mFont.GetAscent() + (aSpineHeight - mFont.GetHeight()) / 2);
+                    // Port: a name too wide for the spine (the Spanish ones) is shrunk about the spine's middle to fit.
+                    int aNameWidth = mFont.StringWidth(aName);
+                    int aMaxWidth = aSpineWidth * SPINE_TEXT_PERCENT / 100;
+                    if (aNameWidth > aMaxWidth)
+                    {
+                        float aScale = (float)aMaxWidth / aNameWidth;
+                        g.SetScale(aScale, aScale, aSpineWidth / 2f, aY + aSpineHeight / 2f);
+                    }
+                    g.DrawString(aName, (aSpineWidth - aNameWidth) / 2, aY + mFont.GetAscent() + (aSpineHeight - mFont.GetHeight()) / 2);
+                    g.SetScale(1f, 1f, 0f, 0f);
                 }
                 mRects[i] = new TRect(0, aY, aSpineWidth, aSpineHeight);
                 aY += aSpineHeight + 1;

@@ -35,6 +35,14 @@ namespace Sexy
         /// <summary>Port (wide screens): all of the extra width, for what keeps to the right edge (RIGHT_X).</summary>
         public int mRightX;
 
+        /// <summary>
+        /// Port: taller than 16:9, how far the Stats / Options / More Games page (0x1f0, whose top keeps its slope
+        /// below 1:1) sits above where it would be had it kept its 16:9 place under Lex at the board spot (which
+        /// moves 1:1 past 16:9). On those pages Lex and his balloon are raised by it (BookWormApp.GetLexLift), or
+        /// he slid behind the page. 0 up to 16:9.
+        /// </summary>
+        public int mPageLift;
+
         /// <summary>Port: the width the design's words were made for (the layout's, less the extra width).</summary>
         public int mDesignWidth;
 
@@ -127,6 +135,13 @@ namespace Sexy
                 {
                     mData[i] = aBase[i] + (int)System.Math.Round(aSlope * anExtra);
                 }
+            }
+            mPageLift = 0;
+            if (anExtra > aWideExtra)
+            {
+                int aPageTop = 0x1f4 / 4;
+                double aPageSlope = (LAYOUT_IPHONE5[aPageTop] - LAYOUT_IPHONE_RETINA[aPageTop]) / (double)(IPHONE5_LONG - IPHONE_RETINA_LONG);
+                mPageLift = (int)System.Math.Round(aPageSlope * aWideExtra) + (anExtra - aWideExtra) - (int)System.Math.Round(aPageSlope * anExtra);
             }
             if (!mIPadDesign)
             {

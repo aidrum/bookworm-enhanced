@@ -141,13 +141,36 @@ namespace Sexy
             return Path.Combine(mApp.applicationStoragePath ?? AppContext.BaseDirectory, theName);
         }
 
+        /// <summary>
+        /// Port: the storage folder of the books' found words. Each language has its own books (Spanish ones in
+        /// es.lproj/books), so its own folder: "books" for English as in the original, "books_&lt;lang&gt;" otherwise.
+        /// </summary>
+        private static string GetBooksFolder()
+        {
+            return Localization.IsSpanish ? "books_" + Constants.Language : "books";
+        }
+
+        /// <summary>
+        /// Port: the language changed (Save was called before). Reads the books again (ContentFS finds the
+        /// new language's) and the words found in them.
+        /// </summary>
+        public void ReloadBooks()
+        {
+            mBooks.Clear();
+            CountBooks(mBooksDir);
+            while (LoadNextBook())
+            {
+            }
+            Load();
+        }
+
         /// <summary>FUN_0002ba78: each book with found words gets books/&lt;name&gt; (their first forms, one a
         /// line); then the histogram.</summary>
         public void Save()
         {
             try
             {
-                string aDir = GetStoragePath("books");
+                string aDir = GetStoragePath(GetBooksFolder());
                 Directory.CreateDirectory(aDir);
                 foreach (CollectionBook aBook in mBooks)
                 {
@@ -196,7 +219,7 @@ namespace Sexy
                     {
                         aWord.mFound = false;
                     }
-                    string aPath = Path.Combine(GetStoragePath("books"), aBook.mName);
+                    string aPath = Path.Combine(GetStoragePath(GetBooksFolder()), aBook.mName);
                     if (!File.Exists(aPath))
                     {
                         continue;
