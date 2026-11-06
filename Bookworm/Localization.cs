@@ -231,6 +231,9 @@ namespace Sexy
             { "Mega Bookworm", "Mega Bookworm" },
             { "Ultra Bookworm", "Ultra Bookworm" },
             { "Bookworm Supreme", "Bookworm supremo" },
+            // The banners' titles, drawn over text-free art (GradientText.DrawBannerTitle).
+            { "Word History", "Historial" },
+            { "More Games", "Más Juegos" },
         };
     }
 }

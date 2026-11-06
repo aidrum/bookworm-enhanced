@@ -156,10 +156,36 @@ namespace Sexy
         /// IMAGE_GROUP13_03 (0x128) and IMAGE_GROUP13_04 (0x130); on iPhone 5 (long side 1136) IMAGE_GROUP13_02
         /// (0x128) and IMAGE_GROUP13_01 (0x130). Port: any iPhone-family screen wider than 960 gets the latter.
         /// </summary>
+        /// <summary>Port (Spanish): the history banner without its English title (images/title_blank*), loaded once.</summary>
+        private Image mBlankHistoryBanner;
+
+        private bool mBlankHistoryBannerLoaded;
+
+        /// <summary>
+        /// IMAGE_GROUP31_02, the "Word History" banner ("More History" on iPad Retina). Port: in Spanish, the
+        /// same banner without its text (made at the atlas's scale) with "Historial" drawn over it.
+        /// </summary>
+        private void DrawHistoryBanner(Graphics g)
+        {
+            Image anImage = AtlasResourceBase.IMAGE_GROUP31_02;
+            if (!Localization.IsSpanish)
+            {
+                g.DrawImage(anImage, mShelfEndPos.mX, mShelfEndPos.mY);
+                return;
+            }
+            if (!mBlankHistoryBannerLoaded)
+            {
+                mBlankHistoryBanner = GradientText.LoadScaled(mApp, "images/title_blank", anImage.mWidth / 320);
+                mBlankHistoryBannerLoaded = true;
+            }
+            g.DrawImage(mBlankHistoryBanner ?? anImage, mShelfEndPos.mX, mShelfEndPos.mY);
+            GradientText.DrawBannerTitle(g, SexyAppBase.Loc("Word History"), mShelfEndPos.mX, mShelfEndPos.mY, anImage.mWidth);
+        }
+
         public void DrawProxyWidget(Graphics g, ProxyWidget theProxy)
         {
             ScreenPos aPos = mApp.mScreenPos;
-            g.DrawImage(AtlasResourceBase.IMAGE_GROUP31_02, mShelfEndPos.mX, mShelfEndPos.mY);
+            DrawHistoryBanner(g);
             g.DrawImage(mSideImage, mSidePos.mX, mSidePos.mY);
             if (mPercent.Length == 0)
             {

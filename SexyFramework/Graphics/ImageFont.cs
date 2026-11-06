@@ -339,6 +339,10 @@ namespace Sexy
 
         public bool mOwnsImage;
 
+        /// <summary>Port: when set, the layer is drawn in this colour (from a white copy of its image) whatever
+        /// colour the text is drawn in; only its alpha follows the text's. See ImageFont.SetLayerSolidColor.</summary>
+        public Color? mSolidColor;
+
         public TRect GetRectForChar(char theChar)
         {
             if (mBaseFontLayer.GetCharData(theChar, out CharData cd))
@@ -436,7 +440,55 @@ namespace Sexy
 
         public override void Dispose()
         {
+            foreach (ActiveFontLayer active in mActiveLayerList)
+            {
+                if (active.mOwnsImage)
+                {
+                    active.mScaledImage?.Dispose();
+                }
+            }
             mFontData?.DeRef();
+        }
+
+        /// <summary>
+        /// Port: draws layer theLayerIndex (in the font file's order) in theColor, from a white copy of its image,
+        /// e.g. an outline layer whose black is in its pixels, which no tint can change. Only this ImageFont (make a
+        /// Duplicate) and its current active layers: regenerating them (a new scale, point size or tags) drops it.
+        /// </summary>
+        public void SetLayerSolidColor(int theLayerIndex, Color theColor)
+        {
+            Prepare();
+            if (theLayerIndex < 0 || theLayerIndex >= mFontData.mFontLayerList.Count)
+            {
+                return;
+            }
+            FontLayer aLayer = mFontData.mFontLayerList[theLayerIndex];
+            ActiveFontLayer anActive = mActiveLayerList.Find(a => a.mBaseFontLayer == aLayer);
+            if (anActive == null)
+            {
+                return;
+            }
+            Microsoft.Xna.Framework.Graphics.GraphicsDevice aDevice = GlobalStaticVars.g.GraphicsDevice;
+            uint[] aPixels = ImageFileLoader.LoadBits(aDevice, aLayer.mImagePath, out int aWidth, out int aHeight);
+            if (aPixels == null)
+            {
+                return;
+            }
+            for (int i = 0; i < aPixels.Length; i++)
+            {
+                aPixels[i] |= 0x00FFFFFFu;
+            }
+            ImageFileLoader.Premultiply(aPixels);
+            Microsoft.Xna.Framework.Graphics.Texture2D aTexture = new Microsoft.Xna.Framework.Graphics.Texture2D(
+                aDevice, aWidth, aHeight, false, Microsoft.Xna.Framework.Graphics.SurfaceFormat.Color);
+            aTexture.SetData(aPixels);
+            if (anActive.mOwnsImage)
+            {
+                anActive.mScaledImage?.Dispose();
+            }
+            anActive.mScaledImage = new Image(aTexture);
+            anActive.mOwnsImage = true;
+            anActive.mSolidColor = theColor;
         }
 
         private static int RoundScaled(double v)
@@ -700,7 +752,9 @@ namespace Sexy
                                 }
                             }
                         }
-                        Color color = new Color(
+                        Color color = active.mSolidColor is Color aSolid
+                            ? new Color(aSolid.R, aSolid.G, aSolid.B, aSolid.A * theColor.A / 255)
+                            : new Color(
                             Math.Min(layer.mColorMult.R * theColor.R / 255 + layer.mColorAdd.R, 255),
                             Math.Min(layer.mColorMult.G * theColor.G / 255 + layer.mColorAdd.G, 255),
                             Math.Min(layer.mColorMult.B * theColor.B / 255 + layer.mColorAdd.B, 255),

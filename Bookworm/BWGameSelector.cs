@@ -49,10 +49,14 @@ namespace Sexy
 
         private TextOrImageButton mHowToPlay;
 
-        /// <summary>Port: the art's yellow (Classic, Arcade) and pink (How to Play) title colours.</summary>
-        private static readonly Color MODE_TEXT_COLOR = new Color(0xff, 0xf9, 0x00, 0xff);
+        /// <summary>Port: the art's gradients, top to bottom (sampled from it): yellow (Classic, Arcade), pink (How to Play).</summary>
+        private static readonly Color MODE_TEXT_TOP = new Color(254, 250, 20, 255);
 
-        private static readonly Color HOW_TO_PLAY_TEXT_COLOR = new Color(0xc6, 0x63, 0x83, 0xff);
+        private static readonly Color MODE_TEXT_BOTTOM = new Color(251, 210, 5, 255);
+
+        private static readonly Color HOW_TO_PLAY_TEXT_TOP = new Color(238, 198, 224, 255);
+
+        private static readonly Color HOW_TO_PLAY_TEXT_BOTTOM = new Color(180, 67, 117, 255);
 
         /// <summary>
         /// Port: in Spanish the mode buttons draw their titles in outlined Cooper Black (the art's typeface), two
@@ -61,9 +65,9 @@ namespace Sexy
         private void ApplyLanguage()
         {
             bool aText = Localization.IsSpanish;
-            mClassic.SetText(aText ? "JUEGO\nCLÁSICO" : null, MODE_TEXT_COLOR);
-            mArcade.SetText(aText ? "JUEGO\nDE ACCIÓN" : null, MODE_TEXT_COLOR);
-            mHowToPlay.SetText(aText ? "CÓMO JUGAR" : null, HOW_TO_PLAY_TEXT_COLOR);
+            mClassic.SetText(aText ? "JUEGO\nCLÁSICO" : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
+            mArcade.SetText(aText ? "JUEGO\nDE ACCIÓN" : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
+            mHowToPlay.SetText(aText ? "CÓMO JUGAR" : null, HOW_TO_PLAY_TEXT_TOP, HOW_TO_PLAY_TEXT_BOTTOM);
         }
 
         private BookWormButton AddButton(int theId, Image theImage, int thePosOffset)
@@ -228,22 +232,27 @@ namespace Sexy
 
     /// <summary>
     /// Port (Spanish): a game-selector button that draws its title as text, centred line by line in outlined
-    /// Cooper Black, in place of its image (which still sizes it); with no text, a plain BookWormButton.
+    /// Cooper Black, in place of its image (which still sizes it); with no text, a plain BookWormButton. Like the
+    /// art, the text has a shadow and a gradient (GradientText).
     /// </summary>
     public class TextOrImageButton : BookWormButton
     {
         private string[] mLines;
 
+        private Color mTopColor;
+
+        private Color mBottomColor;
+
         public TextOrImageButton(int theId, ButtonListener theListener, BookWormApp theApp) : base(theId, theListener, theApp)
         {
         }
 
-        public void SetText(string theText, Color theColor)
+        public void SetText(string theText, Color theTopColor, Color theBottomColor)
         {
             mLines = theText?.Split('\n');
+            mTopColor = theTopColor;
+            mBottomColor = theBottomColor;
             SetFont(Res.FONT_COOPER_OUTLINED);
-            SetColor(0, theColor);
-            SetColor(1, theColor);
         }
 
         public override void Draw(Graphics g)
@@ -258,14 +267,8 @@ namespace Sexy
                 return;
             }
             int aLineHeight = mFont.GetLineSpacing();
-            int aY = (mHeight - aLineHeight * mLines.Length) / 2 + mFont.GetAscent();
-            g.SetColor(GetColor(0));
-            g.SetFont(mFont);
-            foreach (string aLine in mLines)
-            {
-                g.DrawString(aLine, (mWidth - mFont.StringWidth(aLine)) / 2, aY);
-                aY += aLineHeight;
-            }
+            int aFirstBaseline = (mHeight - aLineHeight * mLines.Length) / 2 + mFont.GetAscent();
+            GradientText.Draw(g, mFont, mLines, mWidth / 2, aFirstBaseline, mTopColor, mBottomColor);
         }
     }
 }

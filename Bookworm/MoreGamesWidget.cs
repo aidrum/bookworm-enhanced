@@ -38,6 +38,11 @@ namespace Sexy
 
         public Image mTitleImage; // IMAGE_MORE_GAMES_TITLE, at MORE_GAMES_TITLE_POS (0, 0)
 
+        /// <summary>Port: the title's text-free banner, and the layout scale it was loaded for.</summary>
+        private Image mBlankTitleImage;
+
+        private int mBlankTitleScale;
+
         public MoreGamesWidget(BookWormApp theApp) : base(theApp)
         {
             mTitleImage = theApp.GetImage("images/moregames/title", false);
@@ -59,6 +64,7 @@ namespace Sexy
         {
             RemoveAllWidgets(true, true);
             mTitleImage?.Dispose();
+            mBlankTitleImage?.Dispose();
             base.Dispose();
         }
 
@@ -172,8 +178,24 @@ namespace Sexy
                 return;
             }
             int s = LayoutScale();
-            g.DrawImage(mTitleImage, new TRect(0, 0, mTitleImage.mWidth * s, mTitleImage.mHeight * s),
-                new TRect(0, 0, mTitleImage.mWidth, mTitleImage.mHeight));
+            // Port: the text-free banner the History one shares (images/title_blank*), at the layout's scale and
+            // the title's width (its shadow runs a little longer than the 320x59 title's), with "More Games" drawn
+            // over it in either language.
+            if (mBlankTitleScale != s)
+            {
+                mBlankTitleImage?.Dispose();
+                mBlankTitleImage = GradientText.LoadScaled(mApp, "images/title_blank", s);
+                mBlankTitleScale = s;
+            }
+            TRect aDest = new TRect(0, 0, mTitleImage.mWidth * s, mTitleImage.mHeight * s);
+            if (mBlankTitleImage == null)
+            {
+                g.DrawImage(mTitleImage, aDest, new TRect(0, 0, mTitleImage.mWidth, mTitleImage.mHeight));
+                return;
+            }
+            aDest.mHeight = mBlankTitleImage.mHeight * aDest.mWidth / mBlankTitleImage.mWidth;
+            g.DrawImage(mBlankTitleImage, aDest, new TRect(0, 0, mBlankTitleImage.mWidth, mBlankTitleImage.mHeight));
+            GradientText.DrawBannerTitle(g, SexyAppBase.Loc("More Games"), 0, 0, aDest.mWidth);
         }
 
         /// <summary>DialogButtonDepress (0x433e8): a tray of the list (id 0) opens its game's link.</summary>
