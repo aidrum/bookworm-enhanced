@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+
 namespace Sexy
 {
     /// <summary>
@@ -33,16 +35,40 @@ namespace Sexy
             mImage = AtlasResourceBase.IMAGE_GROUP1_00;
             mHasAlpha = true;
             // The buttons and their places (ScreenPos + 0x10 ... 0x30).
-            AddButton(BUTTON_CLASSIC, AtlasResourceBase.IMAGE_GROUP11_04, 0x10);
-            AddButton(BUTTON_ARCADE, AtlasResourceBase.IMAGE_GROUP11_05, 0x20);
-            AddButton(BUTTON_HOW_TO_PLAY, AtlasResourceBase.IMAGE_GROUP11_15, 0x30);
+            mClassic = (TextOrImageButton)AddButton(BUTTON_CLASSIC, AtlasResourceBase.IMAGE_GROUP11_04, 0x10);
+            mArcade = (TextOrImageButton)AddButton(BUTTON_ARCADE, AtlasResourceBase.IMAGE_GROUP11_05, 0x20);
+            mHowToPlay = (TextOrImageButton)AddButton(BUTTON_HOW_TO_PLAY, AtlasResourceBase.IMAGE_GROUP11_15, 0x30);
             mContinueClassic = AddButton(BUTTON_CONTINUE_CLASSIC, AtlasResourceBase.IMAGE_GROUP11_16, 0x18);
             mContinueArcade = AddButton(BUTTON_CONTINUE_ARCADE, AtlasResourceBase.IMAGE_GROUP11_16, 0x28);
         }
 
+        /// <summary>Port (Spanish): the three mode buttons, whose English titles are baked into their images.</summary>
+        private TextOrImageButton mClassic;
+
+        private TextOrImageButton mArcade;
+
+        private TextOrImageButton mHowToPlay;
+
+        /// <summary>Port: the art's yellow (Classic, Arcade) and pink (How to Play) title colours.</summary>
+        private static readonly Color MODE_TEXT_COLOR = new Color(0xff, 0xf9, 0x00, 0xff);
+
+        private static readonly Color HOW_TO_PLAY_TEXT_COLOR = new Color(0xc6, 0x63, 0x83, 0xff);
+
+        /// <summary>
+        /// Port: in Spanish the mode buttons draw their titles in outlined Cooper Black (the art's typeface), two
+        /// lines like the art for the modes; in English, the original images.
+        /// </summary>
+        private void ApplyLanguage()
+        {
+            bool aText = Localization.IsSpanish;
+            mClassic.SetText(aText ? "JUEGO\nCLÁSICO" : null, MODE_TEXT_COLOR);
+            mArcade.SetText(aText ? "JUEGO\nDE ACCIÓN" : null, MODE_TEXT_COLOR);
+            mHowToPlay.SetText(aText ? "CÓMO JUGAR" : null, HOW_TO_PLAY_TEXT_COLOR);
+        }
+
         private BookWormButton AddButton(int theId, Image theImage, int thePosOffset)
         {
-            BookWormButton aButton = new BookWormButton(theId, this, mApp);
+            BookWormButton aButton = new TextOrImageButton(theId, this, mApp);
             aButton.Resize(mApp.mScreenPos.At(thePosOffset), mApp.mScreenPos.At(thePosOffset + 4), theImage.mWidth, theImage.mHeight);
             aButton.mButtonImage = theImage;
             AddWidget(aButton);
@@ -55,6 +81,7 @@ namespace Sexy
             base.AttachToManager(theState, theTarget, theParam);
             Resize(mApp.mScreenPos.At(0x08), mApp.mScreenPos.At(0x0c), mImage.mWidth, mImage.mHeight);
             SetupSlide(SLIDE_FROM_RIGHT, 0.5f);
+            ApplyLanguage();
             mContinueClassic.SetVisible(mApp.HasSavedGame(BookWormApp.GAME_CLASSIC));
             mContinueArcade.SetVisible(mApp.HasSavedGame(BookWormApp.GAME_ARCADE));
         }
@@ -196,6 +223,49 @@ namespace Sexy
 
         public void ButtonMouseMove(int theId, int theX, int theY)
         {
+        }
+    }
+
+    /// <summary>
+    /// Port (Spanish): a game-selector button that draws its title as text, centred line by line in outlined
+    /// Cooper Black, in place of its image (which still sizes it); with no text, a plain BookWormButton.
+    /// </summary>
+    public class TextOrImageButton : BookWormButton
+    {
+        private string[] mLines;
+
+        public TextOrImageButton(int theId, ButtonListener theListener, BookWormApp theApp) : base(theId, theListener, theApp)
+        {
+        }
+
+        public void SetText(string theText, Color theColor)
+        {
+            mLines = theText?.Split('\n');
+            SetFont(Res.FONT_COOPER_OUTLINED);
+            SetColor(0, theColor);
+            SetColor(1, theColor);
+        }
+
+        public override void Draw(Graphics g)
+        {
+            if (mLines == null)
+            {
+                base.Draw(g);
+                return;
+            }
+            if (mBtnNoDraw)
+            {
+                return;
+            }
+            int aLineHeight = mFont.GetLineSpacing();
+            int aY = (mHeight - aLineHeight * mLines.Length) / 2 + mFont.GetAscent();
+            g.SetColor(GetColor(0));
+            g.SetFont(mFont);
+            foreach (string aLine in mLines)
+            {
+                g.DrawString(aLine, (mWidth - mFont.StringWidth(aLine)) / 2, aY);
+                aY += aLineHeight;
+            }
         }
     }
 }
