@@ -13,9 +13,48 @@ namespace Sexy
         /// </summary>
         public override void Draw(Graphics g)
         {
-            // Port: the iPad's bookshelf (with its side borders) is centred in the iPhone design.
+            ScreenPos aPos = mApp.mScreenPos;
             Image aShelf = mGreyed ? AtlasResourceBase.IMAGE_GROUP7_00 : AtlasResourceBase.IMAGE_GROUP6_00;
-            g.DrawImage(aShelf, aShelf.mWidth > mWidth ? mApp.mScreenPos.mWideImageX : 0, 0);
+            float aScale = BoardScale;
+            if (aScale != 1f)
+            {
+                // Port (wide game layout): the board at its own size into an image, drawn scaled.
+                int aWidth = LogicalWidth;
+                int aHeight = LogicalHeight;
+                if (mScaledImage == null || mScaledImage.mWidth != aWidth || mScaledImage.mHeight != aHeight)
+                {
+                    mScaledImage?.Dispose();
+                    mScaledImage = new MemoryImage();
+                    mScaledImage.Create(aWidth, aHeight);
+                }
+                Graphics aBoardG = Graphics.GetNew(mScaledImage);
+                aBoardG.Clear(Color.Transparent);
+                DrawShelf(aBoardG, aShelf, aWidth, aHeight);
+                DrawPieces(aBoardG);
+                mEffects.Draw(aBoardG);
+                mEmbers.Draw(aBoardG, false);
+                aBoardG.SetRenderTarget(null);
+                aBoardG.PrepareForReuse();
+                g.DrawImage(mScaledImage, new TRect(0, 0, mWidth, mHeight), new TRect(0, 0, aWidth, aHeight));
+            }
+            else
+            {
+                DrawShelf(g, aShelf, mWidth, mHeight);
+            }
+            if (aPos.mWideGame && aShelf.mHeight > aPos.mWideStripY)
+            {
+                // Port (wide game layout): the books strip under the bottom shelf, behind the bar beside the board.
+                int aShelfX = aShelf.mWidth > aPos.mWideBoardWidth ? (aShelf.mWidth - aPos.mWideBoardWidth) / 2 : 0;
+                int aStripWidth = System.Math.Min(aShelf.mWidth, aPos.mWideBoardWidth);
+                int aStripHeight = aShelf.mHeight - aPos.mWideStripY;
+                // Tiled across the bar's whole width.
+                int aBarLeft = aPos.At(0x158);
+                for (int aStripX = aBarLeft; aStripX < aBarLeft + aPos.mWideBarWidth; aStripX += aStripWidth)
+                {
+                    int aWidth = System.Math.Min(aStripWidth, aBarLeft + aPos.mWideBarWidth - aStripX);
+                    g.DrawImage(aShelf, new TRect(aStripX, aPos.mWideStripDestY, aWidth, aStripHeight), new TRect(aShelfX, aPos.mWideStripY, aWidth, aStripHeight));
+                }
+            }
             base.Draw(g);
             DrawLevelBar(g);
             DrawLevel(g);
@@ -29,28 +68,88 @@ namespace Sexy
                 g.DrawImage(aCloud, aLex.mX + 0x3c - mX, aLex.mY + 0x32 - mY - aCloud.mHeight / 2 - (int)((1.0 - mBurpAlpha) * 48.0));
                 g.SetColorizeImages(false);
             }
+            if (aScale != 1f)
+            {
+                mEmbers.Draw(g, true);
+                return;
+            }
             DrawPieces(g);
             mEffects.Draw(g);
             mEmbers.Draw(g);
+        }
+
+        /// <summary>
+        /// Port: the iPad's bookshelf (with its side pillars) centred on the iPhone's narrower board and cut to the
+        /// board's size (ScreenPos.NarrowBoard; the board does not clip, so the pillars would show beside it).
+        /// </summary>
+        private void DrawShelf(Graphics g, Image theShelf, int theWidth, int theHeight)
+        {
+            int aShelfX = theShelf.mWidth > theWidth ? (theShelf.mWidth - theWidth) / 2 : 0;
+            int aShelfWidth = System.Math.Min(theShelf.mWidth, theWidth);
+            int aShelfHeight = System.Math.Min(theShelf.mHeight, theHeight);
+            g.DrawImage(theShelf, new TRect(0, 0, aShelfWidth, aShelfHeight), new TRect(aShelfX, 0, aShelfWidth, aShelfHeight));
         }
 
         /// <summary>FUN_00010068: the book spines fill the bar from the left (ScreenPos + 0x150), under its frame (+ 0x158).</summary>
         private void DrawLevelBar(Graphics g)
         {
             ScreenPos aPos = mApp.mScreenPos;
+            Image aFrame = mGreyed ? AtlasResourceBase.IMAGE_GROUP4_01 : AtlasResourceBase.IMAGE_GROUP4_02;
+            // Port (wide game layout): the bar spans the screen (ScreenPos.mWideBarWidth), its books window grows
+            // by as much as the frame.
+            int aGrowth = aPos.mWideGame ? aPos.mWideBarWidth - aFrame.mWidth : 0;
             if (mLevelProgress > 0)
             {
                 Image aBar = mGreyed ? AtlasResourceBase.IMAGE_GROUP7_03 : AtlasResourceBase.IMAGE_GROUP7_02;
                 int aLeft = aPos.At(0x150);
                 int aTop = aPos.At(0x154);
-                int aX = System.Math.Min(aLeft, (int)(aLeft + aBar.mWidth * mLevelProgress) - aBar.mWidth);
+                int aBarWidth = aBar.mWidth + aGrowth;
+                int aX = System.Math.Min(aLeft, (int)(aLeft + aBarWidth * mLevelProgress) - aBarWidth);
                 g.PushState();
-                g.ClipRect(aLeft, aTop, aBar.mWidth, aBar.mHeight);
-                g.DrawImage(aBar, aX, aTop);
+                g.ClipRect(aLeft, aTop, aBarWidth, aBar.mHeight);
+                if (aGrowth > 0)
+                {
+                    // Port: the books tiled across the wider window. The last tile would reach past the fill's leading
+                    // edge (aX + aBarWidth), so the clip stops there.
+                    g.ClipRect(aLeft, aTop, aX + aBarWidth - aLeft, aBar.mHeight);
+                    for (int aTileX = aX; aTileX < aX + aBarWidth; aTileX += aBar.mWidth)
+                    {
+                        g.DrawImage(aBar, aTileX, aTop);
+                    }
+                }
+                else
+                {
+                    g.DrawImage(aBar, aX, aTop);
+                }
                 g.PopState();
             }
-            g.DrawImage(mGreyed ? AtlasResourceBase.IMAGE_GROUP4_01 : AtlasResourceBase.IMAGE_GROUP4_02, aPos.At(0x158), aPos.At(0x15c));
+            if (aGrowth > 0)
+            {
+                DrawStretchedMiddle(g, aFrame, aPos.At(0x158), aPos.At(0x15c), aPos.mWideBarWidth);
+            }
+            else
+            {
+                g.DrawImage(aFrame, aPos.At(0x158), aPos.At(0x15c));
+            }
         }
+
+        /// <summary>
+        /// Port (wide game layout): the bar's frame at theWidth: its ends (the menu button's and the level's pillars,
+        /// BAR_END_PARTS of its width each) as they are, its plain middle stretched between them.
+        /// </summary>
+        private static void DrawStretchedMiddle(Graphics g, Image theImage, int theX, int theY, int theWidth)
+        {
+            int anEnd = theImage.mWidth * BAR_END_PARTS / 0x280;
+            int aHeight = theImage.mHeight;
+            int aMiddle = theImage.mWidth - anEnd * 2;
+            g.DrawImage(theImage, new TRect(theX, theY, anEnd, aHeight), new TRect(0, 0, anEnd, aHeight));
+            g.DrawImage(theImage, new TRect(theX + anEnd, theY, theWidth - anEnd * 2, aHeight), new TRect(anEnd, 0, aMiddle, aHeight));
+            g.DrawImage(theImage, new TRect(theX + theWidth - anEnd, theY, anEnd, aHeight), new TRect(theImage.mWidth - anEnd, 0, anEnd, aHeight));
+        }
+
+        /// <summary>Port: how much of the bar frame's 640 (iPhone Retina) pixels each end keeps (the pillars and
+        /// their shading reach about 80 in; 100 to 540 is plain).</summary>
+        private const int BAR_END_PARTS = 0x64;
 
         /// <summary>FUN_0001020c: the level number, green with a black shadow (centred on ScreenPos + 0x168).</summary>
         private void DrawLevel(Graphics g)

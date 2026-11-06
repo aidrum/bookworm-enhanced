@@ -19,6 +19,10 @@ namespace Sexy
 
         public bool mDead; // 0x08
 
+        /// <summary>Port (wide game layout): placed outside the board's own space (the score's sparkles, a
+        /// flying fire tile's embers), so drawn over the scaled board rather than with it (Board.Draw).</summary>
+        public bool mUnscaled;
+
         public double mX; // 0x0c
 
         public double mY; // 0x14
@@ -190,6 +194,7 @@ namespace Sexy
                 anEmber.mLife = anEmber.mDecay = 0;
                 anEmber.mDelay = 0;
                 anEmber.mLoop = false;
+                anEmber.mUnscaled = false;
                 anEmber.mFrame = anEmber.mFrameCount = anEmber.mType = 0;
             }
             anEmber.mMgr = this;
@@ -222,6 +227,18 @@ namespace Sexy
             foreach (Ember anEmber in mEmbers)
             {
                 anEmber.Draw(g);
+            }
+        }
+
+        /// <summary>Port (wide game layout): only the embers with (or without) Ember.mUnscaled.</summary>
+        public void Draw(Graphics g, bool theUnscaled)
+        {
+            foreach (Ember anEmber in mEmbers)
+            {
+                if (anEmber.mUnscaled == theUnscaled)
+                {
+                    anEmber.Draw(g);
+                }
             }
         }
 

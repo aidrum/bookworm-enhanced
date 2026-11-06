@@ -495,6 +495,7 @@ namespace Sexy
             if (mDisplayScore != mGameStats.mScore)
             {
                 Ember anEmber = mEmbers.Add();
+                anEmber.mUnscaled = true;
                 anEmber.mType = mRand.Next() % 100 > 79 ? 1 : 0;
                 anEmber.mX = aX;
                 anEmber.mY = aY;
@@ -505,6 +506,7 @@ namespace Sexy
                 anEmber.mDecay = mRand.Next() % 1000 / 1000.0 * 0.025 + 0.01;
             }
             Ember aGlow = mEmbers.Add();
+            aGlow.mUnscaled = true;
             aGlow.mType = Ember.TYPE_GLOW;
             aGlow.mX = aX - 8;
             aGlow.mY = aY - 8;
@@ -839,7 +841,7 @@ namespace Sexy
                 Ember anEmber = mEmbers.Add();
                 anEmber.mType = 0;
                 anEmber.mX = mRand.Next() % (uint)mWidth;
-                anEmber.mY = mRand.Next() % (uint)mHeight;
+                anEmber.mY = mRand.Next() % (uint)LogicalHeight;
                 anEmber.mGravity = mRand.Next() % 1000 / 1000.0 * 0.005 + 0.002;
                 anEmber.mLife = 1.0;
                 anEmber.mDecay = mRand.Next() % 1000 / 1000.0 * 0.001 + 0.00075;

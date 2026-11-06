@@ -162,7 +162,156 @@ namespace Sexy
             {
                 mData[anOffset / 4] += mRightX;
             }
+            // Port: the iPad design's pillars (board, bookshelf) only while the screen is no wider than the design;
+            // wider, the curtain beside them would show their seam, so the board is the iPhone's (640 wide).
+            mPillars = mIPadDesign && mRightX == 0;
+            if (mIPadDesign && !mPillars)
+            {
+                NarrowBoard(aScale);
+            }
+            mWideGame = mIPadDesign && !Constants.Landscape && (long)theWidth * 3 >= (long)theHeight * 4;
+            if (mWideGame)
+            {
+                LayOutWideGame(aScale, theWidth, theHeight);
+            }
         }
+
+        /// <summary>
+        /// Port (landscape screens, 4:3 and wider, iPad design): the board screen is laid out side by side in a
+        /// 4:3 block centred on the screen. The board goes to the block's right; the panel left of it gets the
+        /// board is centred vertically, without the books strip under its bottom shelf; the panel left of it has Lex
+        /// standing on the bottom bar (menu button, level bar, score, level) with his word balloons to his right
+        /// and that strip behind the bar.
+        /// The menu pages keep the portrait places (Lex's wide place is only taken with the board: mWideLex).
+        /// </summary>
+        public bool mWideGame;
+
+        /// <summary>Port: true while the iPad design's side pillars are drawn (no extra width; see Init).</summary>
+        public bool mPillars;
+
+        /// <summary>
+        /// Port: the iPad design with the iPhone's board, the iPad shelf image cut to its middle 640 (no pillars):
+        /// the board's own words take the iPhone Retina values (scaled as for the iPhone design), the board and
+        /// the pages over it are centred where the iPad's was.
+        /// </summary>
+        private void NarrowBoard(int theScale)
+        {
+            foreach (int anOffset in NARROW_BOARD_WORDS)
+            {
+                int i = anOffset / 4;
+                mData[i] += theScale * (LAYOUT_IPHONE_RETINA[i] - LAYOUT_IPAD[i]);
+            }
+            foreach (int anOffset in new[] { 0x2d0, 0x220, 0x2e0 })
+            {
+                int i = anOffset / 4;
+                int aWidth = mData[i + 2];
+                mData[i + 2] = 0x280 * theScale;
+                mData[i] += (aWidth - mData[i + 2]) / 2;
+            }
+        }
+
+        /// <summary>Port: board-relative words the iPhone board has its own values for (menu button, level bar and its
+        /// frame, score, level, grid origin).</summary>
+        private static readonly int[] NARROW_BOARD_WORDS = { 0x148, 0x150, 0x158, 0x160, 0x168, 0x178, 0x17c };
+
+        /// <summary>Port (mWideGame): how much of the board's bottom (the books strip under the bottom shelf) is cut
+        /// off the board, where in the shelf image that strip starts, and where it goes behind the bar (board-relative
+        /// y; x is the bar frame's).</summary>
+        public int mWideBoardCut;
+
+        public int mWideStripY;
+
+        public int mWideStripDestY;
+
+        /// <summary>Port (mWideGame): the bottom bar's width (the screen's): its frame's ends stay as they are and
+        /// its middle stretches; the books behind it and the level bar's books are tiled.</summary>
+        public int mWideBarWidth;
+
+        /// <summary>Port (mWideGame): the board is shown this much bigger (Board.BoardScale), its widget rect (0x2d0)
+        /// the shown size; its own width and height (the iPhone board less the strip).</summary>
+        public float mWideBoardScale = 1f;
+
+        public int mWideBoardWidth;
+
+        public int mWideBoardHeight;
+
+        /// <summary>Port: how much bigger the board shows in the wide game layout. More would not leave the panel
+        /// room for the bar (640 wide) in a 4:3 block.</summary>
+        public const float WIDE_BOARD_SCALE = 1.25f;
+
+        /// <summary>Port (mWideGame): Lex's place beside the board, and where he fades in from (below it).</summary>
+        public TPoint mWideLex;
+
+        public TPoint mWideLexEntry;
+
+        private void LayOutWideGame(int theScale, int theWidth, int theHeight)
+        {
+            int aBlockWidth = (int)System.Math.Round(theHeight * 4.0 / 3.0);
+            int aBlockX = (theWidth - aBlockWidth) / 2;
+            // The board's own size (the iPhone board without the books strip under its bottom shelf, which goes
+            // behind the bar) and its shown size.
+            mWideBoardCut = 0x64 * theScale;
+            mWideBoardScale = WIDE_BOARD_SCALE;
+            mWideBoardWidth = mData[0x2d8 / 4];
+            mWideBoardHeight = mData[0x2dc / 4] - mWideBoardCut;
+            int aBoardWidth = (int)System.Math.Round(mWideBoardWidth * mWideBoardScale);
+            int aBoardHeight = (int)System.Math.Round(mWideBoardHeight * mWideBoardScale);
+            int aBoardX = aBlockX + aBlockWidth - aBoardWidth;
+            // The bar's screen place (it keeps its height at the bottom of the screen) and Lex's and his balloons'
+            // places relative to each other, before the board moves.
+            int aBoardY = mData[0x2d4 / 4];
+            int aBalloonDX = mData[0x230 / 4] - mData[0x90 / 4];
+            int aBalloonDY = mData[0x234 / 4] - mData[0x94 / 4];
+            int aBigBalloonDX = mData[0x260 / 4] - mData[0x90 / 4];
+            int aBigBalloonDY = mData[0x264 / 4] - mData[0x94 / 4];
+            // The board, centred vertically at the block's right.
+            int aNewBoardY = ((theHeight - aBoardHeight) / 2) - 55;
+            mData[0x2d0 / 4] = aBoardX;
+            mData[0x2d4 / 4] = aNewBoardY;
+            mData[0x2d8 / 4] = aBoardWidth;
+            mData[0x2dc / 4] = aBoardHeight;
+            // The bottom bar (board-relative: menu button, level bar and its frame, score, level) stays at the
+            // bottom of the screen and spans its whole width (mWideBarWidth): the menu button and the level bar keep
+            // to its left end, the score to its middle, the level to its right end (Board.DrawWideBarFrame).
+            int aFrameX = mData[0x158 / 4];
+            int aBarDY = aBoardY - aNewBoardY;
+            mWideBarWidth = theWidth;
+            int aNewFrameX = -aBoardX;
+            int aGrowth = mWideBarWidth - mWideBoardWidth;
+            mData[0x148 / 4] = aNewFrameX + mData[0x148 / 4] - aFrameX;
+            mData[0x150 / 4] = aNewFrameX + mData[0x150 / 4] - aFrameX;
+            mData[0x160 / 4] = aNewFrameX + mData[0x160 / 4] - aFrameX + aGrowth / 2;
+            mData[0x168 / 4] = aNewFrameX + mData[0x168 / 4] - aFrameX + aGrowth;
+            mData[0x158 / 4] = aNewFrameX;
+            foreach (int anOffset in WIDE_BAR_X)
+            {
+                mData[anOffset / 4 + 1] += aBarDY;
+            }
+            // The strip: from the shelf image's bottom shelf down, behind the bar where it was behind it on the board.
+            mWideStripY = mWideBoardHeight;
+            mWideStripDestY = mWideStripY + aBarDY;
+            // The level-up page and the in-game word collection page go over the board.
+            mData[0x220 / 4] = aBoardX + (aBoardWidth - mData[0x228 / 4]) / 2;
+            mData[0x2e0 / 4] = aBoardX + (aBoardWidth - mData[0x2e8 / 4]) / 2;
+            // Lex at the panel's left, standing behind the bar's frame as he stands behind the board's top, with his
+            // balloons to his right as in portrait.
+            int aFrameTop = aNewBoardY + mData[0x15c / 4];
+            mWideLex = new TPoint(aBlockX + 0x30 * theScale, aFrameTop - 0xe4 * theScale);
+            mWideLexEntry = new TPoint(mWideLex.mX + mData[0x98 / 4] - mData[0x90 / 4], mWideLex.mY + mData[0x9c / 4] - mData[0x94 / 4]);
+            // The bonus word banner hangs at the top of the panel, straight above Lex (its width, 0xa0, is Lex's 0x80
+            // plus 0x20).
+            int aBannerX = mWideLex.mX - 0x10 * theScale;
+            mData[0x190 / 4] = aBannerX;
+            mData[0x198 / 4] = aBannerX;
+            mData[0x230 / 4] = mWideLex.mX + aBalloonDX;
+            mData[0x234 / 4] = mWideLex.mY + aBalloonDY;
+            mData[0x260 / 4] = mWideLex.mX + aBigBalloonDX;
+            mData[0x264 / 4] = mWideLex.mY + aBigBalloonDY;
+        }
+
+        /// <summary>Port (mWideGame): the bottom bar's board-relative x words (0x148 menu button, 0x150 level bar,
+        /// 0x158 its frame, 0x160 score, 0x168 level).</summary>
+        private static readonly int[] WIDE_BAR_X = { 0x148, 0x150, 0x158, 0x160, 0x168 };
 
         /// <summary>
         /// Port: x words (byte offsets) of screen places that keep to the middle of a wide layout: the logo (0x00),

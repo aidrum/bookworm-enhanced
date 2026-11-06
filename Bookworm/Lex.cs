@@ -123,8 +123,8 @@ namespace Sexy
         {
             base.Relayout();
             ScreenPos aPos = mApp.mScreenPos;
-            int anOffset = mInterfaceTarget == 1 ? 0x80 : mInterfaceTarget == 2 ? 0x90 : 0x88;
-            mTimelinePos = new TPoint(aPos.At(anOffset), aPos.At(anOffset + 4) - (mInterfaceTarget == 2 ? mApp.GetLexLift(mInterfaceState) : 0));
+            int anOffset = mInterfaceTarget == 1 ? 0x80 : 0x88;
+            mTimelinePos = mInterfaceTarget == 2 ? mApp.GetLexBoardSpot(mInterfaceState, false) : new TPoint(aPos.At(anOffset), aPos.At(anOffset + 4));
             Move(mTimelinePos.mX, mTimelinePos.mY);
         }
 
@@ -204,15 +204,18 @@ namespace Sexy
         {
             int anOldTarget = mInterfaceTarget;
             int anOldParam = mInterfaceParam;
+            int anOldState = mInterfaceState;
             base.SetInterfaceState(theState, theTarget, theParam);
             mTimeline.Clear();
             ScreenPos aPos = mApp.mScreenPos;
             TPoint aMenu = new TPoint(aPos.At(0x80), aPos.At(0x84));
             TPoint anOffLeft = new TPoint(aPos.At(0x88), aPos.At(0x8c));
-            // Port: on the menu pages past 16:9, above the page (BookWormApp.GetLexLift).
-            int aLift = mApp.GetLexLift(theState);
-            TPoint aBoard = new TPoint(aPos.At(0x90), aPos.At(0x94) - aLift);
-            TPoint aBoardEntry = new TPoint(aPos.At(0x98), aPos.At(0x9c) - aLift);
+            // Port: on the menu pages past 16:9, above the page (BookWormApp.GetLexLift); beside the board in the
+            // wide game layout. Leaving the board spot starts from the old state's.
+            TPoint aBoard = mApp.GetLexBoardSpot(theState, false);
+            TPoint aBoardEntry = mApp.GetLexBoardSpot(theState, true);
+            TPoint anOldBoard = mApp.GetLexBoardSpot(anOldState, false);
+            TPoint anOldBoardEntry = mApp.GetLexBoardSpot(anOldState, true);
             TPoint[] aKeys = new TPoint[4];
             int[] anAlphas = new int[4];
             int aDuration = 0;
@@ -244,22 +247,23 @@ namespace Sexy
                 aMove = true;
                 break;
             case 6: // board -> away: fades out
-                aKeys = new[] { aBoard, aBoardEntry, aBoardEntry, aBoardEntry };
+                aKeys = new[] { anOldBoard, anOldBoardEntry, aBoardEntry, aBoardEntry };
                 anAlphas = new[] { 0xff, 0, 0, 0 };
                 aDuration = 0x14;
                 aMove = true;
                 break;
             case 7: // board -> menu
-                aKeys = new[] { aBoard, aBoardEntry, anOffLeft, aMenu };
+                aKeys = new[] { anOldBoard, anOldBoardEntry, anOffLeft, aMenu };
                 anAlphas = new[] { 0xff, 0, 0xff, 0xff };
                 aDuration = 0x14;
                 aMove = true;
                 break;
             case 8: // board -> board
-                aKeys = new[] { aBoard, aBoardEntry, aBoardEntry, aBoard };
+                aKeys = new[] { anOldBoard, anOldBoardEntry, aBoardEntry, aBoard };
                 anAlphas = new[] { 0xff, 0, 0, 0xff };
                 aDuration = 0x19;
-                aMove = false;
+                // Port: the wide game layout puts the board spot elsewhere than on the menu pages.
+                aMove = anOldBoard.mX != aBoard.mX || anOldBoard.mY != aBoard.mY;
                 if (mGrey && mInterfaceState == 3)
                 {
                     // Not greyed any more once the move starts.

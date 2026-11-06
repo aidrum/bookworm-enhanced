@@ -147,11 +147,12 @@ namespace Sexy
         /// <summary>A left-aligned Lockergnome popup at the grid's left edge, at theY or below the last one.</summary>
         private void AddPopup(string theText, int theY)
         {
-            if (mBonusPopup != null && mBonusPopup.mLife > 0 && theY < mBonusPopup.mY + 0x24)
+            if (mBonusPopup != null && mBonusPopup.mLife > 0 && theY < FromShown(mBonusPopup.mY) + 0x24)
             {
-                theY = mBonusPopup.mY + 0x24;
+                theY = FromShown(mBonusPopup.mY) + 0x24;
             }
             Points aPopup = new Points(mApp, Res.FONT_LOCKERGNOME, theText, mApp.mScreenPos.At(0x178), theY, 200, -1);
+            ShowOnBoard(aPopup);
             mPointsList.Add(aPopup);
             AddWidget(aPopup);
             mBonusPopup = aPopup;
@@ -201,6 +202,8 @@ namespace Sexy
         /// </summary>
         public override void MouseDown(int x, int y, int theClickCount)
         {
+            x = FromShown(x);
+            y = FromShown(y);
             base.MouseDown(x, y, theClickCount);
             if (mState != STATE_PLAYING)
             {
@@ -253,6 +256,8 @@ namespace Sexy
         /// <summary>0x9dfc: lifting off the last tile submits the word; lifting after picking ends the pick.</summary>
         public override void MouseUp(int x, int y, int theClickCount)
         {
+            x = FromShown(x);
+            y = FromShown(y);
             base.MouseUp(x, y, theClickCount);
             if (mState == STATE_PLAYING)
             {
@@ -275,6 +280,8 @@ namespace Sexy
         /// <summary>0x9e98: dragging extends the word to the neighbour the drag points at.</summary>
         public override void MouseDrag(int x, int y)
         {
+            x = FromShown(x);
+            y = FromShown(y);
             base.MouseDrag(x, y);
             if (mState != STATE_PLAYING || mSelection.Count == 0)
             {
@@ -348,7 +355,7 @@ namespace Sexy
             if (mWordScore.mValid)
             {
                 mApp.mWordBalloon.PulseWord();
-                mGlowPulse.Resize((int)thePiece.mX, (int)thePiece.mY, mTileWidth, mTileHeight);
+                mGlowPulse.Resize(ToShown(thePiece.mX), ToShown(thePiece.mY), ToShown(mTileWidth), ToShown(mTileHeight));
                 mGlowPulse.Pulse();
                 mSubmitWaitCount = 0;
                 mSubmitArrow = false;
@@ -434,8 +441,9 @@ namespace Sexy
             CGPoint anAbs = GetAbsPos();
             foreach (Piece aPiece in mSelection)
             {
-                aPiece.mX += (int)anAbs.mX;
-                aPiece.mY += (int)anAbs.mY;
+                // Port: from where the (maybe scaled: wide game layout) board shows them.
+                aPiece.mX = ToShown(aPiece.mX) + (int)anAbs.mX;
+                aPiece.mY = ToShown(aPiece.mY) + (int)anAbs.mY;
             }
             mOverlay.AddEffect(new FlyingPieceList(mSelection));
             mSelection.Clear();
@@ -484,6 +492,7 @@ namespace Sexy
             int aLife = System.Math.Clamp(thePoints / 3, 150, 600);
             int aPoints = (int)(thePoints * mScoreStep);
             Points aPopup = new Points(mApp, Res.FONT_GOLDSCORE, string.Format("+{0}", thePoints), theX, theY, aLife, 0);
+            ShowOnBoard(aPopup);
             mPointsList.Add(aPopup);
             AddWidget(aPopup);
             mBestPointsLevel = System.Math.Max(mBestPointsLevel, aPoints);

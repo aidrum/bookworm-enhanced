@@ -250,8 +250,8 @@ namespace Sexy
             // The logo (ScreenPos + 0x00) and the curtain swags (at 0,1, a header static) slide down; the
             // pedestal (ScreenPos + 0x78) slides up.
             mScreens[3] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_00, new TPoint(mScreenPos.At(0), mScreenPos.At(4)), SlideInWidget.SLIDE_FROM_TOP);
-            mScreens[4] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_01, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP);
-            mScreens[5] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_02, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP);
+            mScreens[4] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_01, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP) { mTile = true };
+            mScreens[5] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_02, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP) { mTile = true };
             mScreens[6] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_14, new TPoint(mScreenPos.At(0x78), mScreenPos.At(0x7c)), SlideInWidget.SLIDE_FROM_BOTTOM) { mStretchEdges = false };
             mScreens[SCREEN_MENU_TABS] = new MenuTabWidget(this);
             mScreens[SCREEN_GAME_SELECTOR] = new BWGameSelector(this);
@@ -366,6 +366,22 @@ namespace Sexy
                 return 0;
             }
             return INTERFACE_TARGETS[theState, SCREEN_LEX] == 2 && INTERFACE_TARGETS[theState, SCREEN_BOARD] == 0 ? mScreenPos.mPageLift : 0;
+        }
+
+        /// <summary>
+        /// Port: Lex's board spot (ScreenPos 0x90, or where he fades in from: 0x98) in theState: beside the board
+        /// in the wide game layout (ScreenPos.mWideLex) while the board is up or hidden under a page, else the
+        /// portrait place, lifted on the menu pages (GetLexLift).
+        /// </summary>
+        public TPoint GetLexBoardSpot(int theState, bool theEntry)
+        {
+            ScreenPos aPos = mScreenPos;
+            if (aPos.mWideGame && theState >= 0 && theState < INTERFACE_TARGETS.GetLength(0) && INTERFACE_TARGETS[theState, SCREEN_BOARD] != 0)
+            {
+                return theEntry ? aPos.mWideLexEntry : aPos.mWideLex;
+            }
+            int anOffset = theEntry ? 0x98 : 0x90;
+            return new TPoint(aPos.At(anOffset), aPos.At(anOffset + 4) - GetLexLift(theState));
         }
 
         /// <summary>0x1200c: a screen's move ended; when none is left moving, all of them are told the state is reached.</summary>
@@ -575,7 +591,8 @@ namespace Sexy
             // The tiles keep their places on the board; its grid's origin moves with the design (0x178 / 0x17c).
             int anOldGridX = mScreenPos.At(0x178);
             int anOldGridY = mScreenPos.At(0x17c);
-            mScreenPos.Init(GetTextureSide(), mWidth, mHeight);
+            // Always the portrait size: ScreenPos holds the landscape pages' places too (turned: mWidth/mHeight swap).
+            mScreenPos.Init(GetTextureSide(), Constants.BackBufferSize.X, Constants.BackBufferSize.Y);
             mBoard?.MovePieces(mScreenPos.At(0x178) - anOldGridX, mScreenPos.At(0x17c) - anOldGridY);
             // The logo and the pedestal take their places in the constructor (LoadingThreadProc).
             if (mScreens[3] is SlideInImage aLogo)
@@ -644,25 +661,30 @@ namespace Sexy
         /// Vtable slot 13 (0x12204): turning to landscape shows the landscape page last seen (states 13 bookshelf,
         /// 14 collection, 15 word history, by <see cref="Collectionator.mLandscapeView"/>); turning back to
         /// portrait remembers it and, coming from landscape, returns to the board (state 10).
+        /// Port (phones and tablets, Main.FollowSurfaceOrientation): the interface is turned and laid out for the
+        /// new shape first (the 4:3 landscape layout, pillarboxed), so the pages arrive in their landscape places.
         /// </summary>
         public override void InterfaceOrientationChanged(UI_ORIENTATION toOrientation)
         {
+            bool aWasLandscape = OrientationIsLandscape(mInterfaceOrientation);
+            int aState = mInterfaceState;
+            base.InterfaceOrientationChanged(toOrientation);
+            XnaGame.ApplyPendingLayoutNow(this);
             if (OrientationIsLandscape(toOrientation))
             {
                 GotoInterfaceState(13 + mCollectionator.mLandscapeView);
             }
             else if (toOrientation == UI_ORIENTATION.UI_ORIENTATION_PORTRAIT || toOrientation == UI_ORIENTATION.UI_ORIENTATION_PORTRAIT_UPSIDE_DOWN)
             {
-                if (mInterfaceState >= 13 && mInterfaceState <= 15)
+                if (aState >= 13 && aState <= 15)
                 {
-                    mCollectionator.mLandscapeView = mInterfaceState - 13;
+                    mCollectionator.mLandscapeView = aState - 13;
                 }
-                if (OrientationIsLandscape(mInterfaceOrientation))
+                if (aWasLandscape)
                 {
                     GotoInterfaceState(10);
                 }
             }
-            base.InterfaceOrientationChanged(toOrientation);
         }
 
         /// <summary>The shake detector's low-pass filter (0x135c, factor 0.9 at 0x1368).</summary>
@@ -885,6 +907,9 @@ namespace Sexy
                 mWidgetManager.RemoveWidget(aLoadingScreen);
                 SafeDeleteWidget(aLoadingScreen);
             }
+            // Port: the window may have changed while loading (the layout waits for it): laid out for it now, before
+            // the menu slides in, rather than just after.
+            XnaGame.RelayoutNow(this);
             // TODO: FUN_000159bc, FUN_00012fd4 and the More Games widget's AttachToManager(0x11, 0, 0).
             int aState = mScreens[SCREEN_DEMO_SPLASH] != null ? 1 : 2;
             if (mInterfaceState != aState)

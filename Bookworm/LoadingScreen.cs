@@ -26,6 +26,13 @@ namespace Sexy
             int aSide = theApp.GetTextureSide();
             mSplashWidth = mSplashImage != null ? mSplashImage.mWidth * aSide / IPAD_RETINA_SIDE : 0;
             mSplashHeight = mSplashImage != null ? mSplashImage.mHeight * aSide / IPAD_RETINA_SIDE : 0;
+            // Port: shrunk to fit a screen narrower or shorter than that, so all of it always shows.
+            if (mSplashWidth > 0 && mSplashHeight > 0)
+            {
+                double aFit = System.Math.Min(1.0, System.Math.Min((double)theApp.mWidth / mSplashWidth, (double)theApp.mHeight / mSplashHeight));
+                mSplashWidth = (int)(mSplashWidth * aFit);
+                mSplashHeight = (int)(mSplashHeight * aFit);
+            }
             mSplashX = (theApp.mWidth - mSplashWidth) / 2;
             mSplashY = (theApp.mHeight - mSplashHeight) / 2;
             // The layout does not follow the window while loading (BookWormApp.ApplyLayout), so the letterbox

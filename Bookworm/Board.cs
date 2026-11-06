@@ -336,6 +336,42 @@ namespace Sexy
             base.Relayout();
         }
 
+        /// <summary>
+        /// Port (wide game layout): how much bigger the board shows than its own coordinates (ScreenPos
+        /// mWideBoardScale; 1 otherwise). The tiles, shelf, effects and embers are drawn at the board's own size
+        /// into mScaledImage and that is drawn scaled; the bottom bar, the menu button and Lex's burp are not
+        /// scaled. Taps come in scaled (the widget has the shown size) and are scaled back.
+        /// </summary>
+        public float BoardScale => mApp.mScreenPos.mWideGame ? mApp.mScreenPos.mWideBoardScale : 1f;
+
+        /// <summary>Port: the board's own width and height (the widget's, unless it is shown scaled).</summary>
+        public int LogicalWidth => mApp.mScreenPos.mWideGame ? mApp.mScreenPos.mWideBoardWidth : mWidth;
+
+        public int LogicalHeight => mApp.mScreenPos.mWideGame ? mApp.mScreenPos.mWideBoardHeight : mHeight;
+
+        /// <summary>Port: a board coordinate where the (maybe scaled) board shows it, and back.</summary>
+        public int ToShown(double theValue)
+        {
+            return (int)System.Math.Round(theValue * BoardScale);
+        }
+
+        public int FromShown(double theValue)
+        {
+            return (int)System.Math.Round(theValue / BoardScale);
+        }
+
+        /// <summary>Port: a popup made at board coordinates moved to where the scaled board shows them.</summary>
+        private void ShowOnBoard(Widget theWidget)
+        {
+            if (BoardScale != 1f)
+            {
+                theWidget.Move(ToShown(theWidget.mX), ToShown(theWidget.mY));
+            }
+        }
+
+        /// <summary>Port (wide game layout): the board drawn at its own size, before it is drawn scaled.</summary>
+        private MemoryImage mScaledImage;
+
         /// <summary>Port (dynamic aspect): the tiles follow the grid when the layout moves it (BookWormApp.ApplyLayout).</summary>
         public void MovePieces(int theDX, int theDY)
         {

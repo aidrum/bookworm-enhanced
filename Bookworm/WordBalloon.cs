@@ -130,9 +130,29 @@ namespace Sexy
             mTextWidget.AddText(theText, aSpacing);
             mTextWidget.NewLine(aSpacing);
             mTextWidget.Fit(2);
-            Prepare(mApp.mScreenPos.RectAt(0x240), AtlasResourceBase.IMAGE_GROUP4_00, false);
+            Prepare(NextToLex(mApp.mScreenPos.RectAt(0x240)), AtlasResourceBase.IMAGE_GROUP4_00, false);
             mPendingMode = MODE_EXCLAIM;
             mText = "";
+        }
+
+        /// <summary>
+        /// Port (wide game layout): a balloon placed for Lex's portrait board spot (ScreenPos 0x90) moved along with
+        /// him when he stands at his wide spot beside the board ("LEVEL UP!"); elsewhere (the menu pages) as it is.
+        /// </summary>
+        private TRect NextToLex(TRect theRect)
+        {
+            ScreenPos aPos = mApp.mScreenPos;
+            if (!aPos.mWideGame)
+            {
+                return theRect;
+            }
+            TPoint aSpot = mApp.GetLexBoardSpot(mApp.mInterfaceState, false);
+            if (aSpot.mX == aPos.mWideLex.mX && aSpot.mY == aPos.mWideLex.mY)
+            {
+                theRect.mX += aSpot.mX - aPos.At(0x90);
+                theRect.mY += aSpot.mY - aPos.At(0x94);
+            }
+            return theRect;
         }
 
         /// <summary>FUN_00030394: speech in the big bubble; too long, it gets twice the line spacing.</summary>

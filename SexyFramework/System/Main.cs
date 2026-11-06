@@ -158,7 +158,8 @@ namespace Sexy
 
         public void OnResize(object sender, EventArgs e)
         {
-            Rectangle bounds = Window.ClientBounds;
+            Rectangle bounds = WindowBounds();
+            mFittedSize = new Point(bounds.Width, bounds.Height);
             if (GlobalStaticVars.gSexyAppBase != null && bounds.Width > 0 && bounds.Height > 0)
             {
                 FitToWindow();
@@ -171,7 +172,7 @@ namespace Sexy
         /// <summary>Scales the game's current layout into the window (letterboxed where their shapes differ).</summary>
         private void FitToWindow()
         {
-            Rectangle bounds = Window.ClientBounds;
+            Rectangle bounds = WindowBounds();
             if (bounds.Width <= 0 || bounds.Height <= 0)
             {
                 return;
@@ -182,22 +183,80 @@ namespace Sexy
         }
 
         /// <summary>
-        /// On phones and tablets the backbuffer must be exactly the surface size. Otherwise MonoGame letterboxes it
+        /// Port: the window's (or surface's) size, at (0, 0). On the desktop from SDL itself (SdlWindow):
+        /// ClientBounds went stale when the window was maximized after leaving full screen.
+        /// </summary>
+        private Rectangle WindowBounds()
+        {
+            Rectangle aBounds = Window.ClientBounds;
+            if (!IsMobile && SdlWindow.TryGetSize(Window.Handle, out int aWidth, out int aHeight))
+            {
+                return new Rectangle(0, 0, aWidth, aHeight);
+            }
+            return new Rectangle(0, 0, aBounds.Width, aBounds.Height);
+        }
+
+        /// <summary>The window size the picture was last fitted to (OnResize).</summary>
+        private Point mFittedSize;
+
+        /// <summary>
+        /// Port: refits when the window's size or the backbuffer's no longer match what was fitted. Maximizing a
+        /// desktop window could leave the picture fitted to a size the window then left without another
+        /// ClientSizeChanged, or the backbuffer at the old size.
+        /// </summary>
+        private void CheckWindowSize()
+        {
+            Rectangle aBounds = WindowBounds();
+            if (aBounds.Width <= 0 || aBounds.Height <= 0 || GlobalStaticVars.gSexyAppBase == null)
+            {
+                return;
+            }
+            PresentationParameters pp = base.GraphicsDevice.PresentationParameters;
+            Point aBackBuffer = new Point(pp.BackBufferWidth, pp.BackBufferHeight);
+            bool aMismatch = mFittedSize.X != aBounds.Width || mFittedSize.Y != aBounds.Height || aBackBuffer.X != aBounds.Width || aBackBuffer.Y != aBounds.Height;
+            // Once per change only: a mismatch that stays (OnResize could not fix it) must not keep restarting the
+            // layout's settling.
+            if (aMismatch && (aBackBuffer != mCheckedBackBuffer || aBounds.Size != mCheckedBounds))
+            {
+                OnResize(null, null);
+            }
+            mCheckedBackBuffer = new Point(base.GraphicsDevice.PresentationParameters.BackBufferWidth, base.GraphicsDevice.PresentationParameters.BackBufferHeight);
+            mCheckedBounds = WindowBounds().Size;
+        }
+
+        private Point mCheckedBackBuffer;
+
+        private Point mCheckedBounds;
+
+        /// <summary>
+        /// The backbuffer must be exactly the window's (or surface's) size. Otherwise MonoGame letterboxes it
         /// through the viewport, which is lost whenever a render target is unset, so the picture shrank
-        /// and later jumped (black bands at the top when the surface was smaller than the display).
+        /// and later jumped (black bands at the top when the surface was smaller than the display). Port: the
+        /// desktop too (a maximized window kept the old backbuffer size).
         /// </summary>
         private void MatchBackBufferToWindow(Rectangle theBounds)
         {
-            if (!IsMobile || theBounds.Width <= 0 || theBounds.Height <= 0)
+            if (theBounds.Width <= 0 || theBounds.Height <= 0)
             {
                 return;
             }
             PresentationParameters pp = base.GraphicsDevice.PresentationParameters;
             if (pp.BackBufferWidth != theBounds.Width || pp.BackBufferHeight != theBounds.Height)
             {
-                Main.graphics.PreferredBackBufferWidth = theBounds.Width;
-                Main.graphics.PreferredBackBufferHeight = theBounds.Height;
-                Main.graphics.GraphicsDeviceManager.ApplyChanges();
+                if (IsMobile)
+                {
+                    Main.graphics.PreferredBackBufferWidth = theBounds.Width;
+                    Main.graphics.PreferredBackBufferHeight = theBounds.Height;
+                    Main.graphics.GraphicsDeviceManager.ApplyChanges();
+                }
+                else
+                {
+                    // The desktop's GL backbuffer is the window itself: only MonoGame's record of its size (used
+                    // for the viewport whenever a render target is unset) is put right; ApplyChanges would resize
+                    // the window, un-maximizing it.
+                    pp.BackBufferWidth = theBounds.Width;
+                    pp.BackBufferHeight = theBounds.Height;
+                }
             }
             base.GraphicsDevice.Viewport = new Viewport(0, 0, theBounds.Width, theBounds.Height);
         }
@@ -213,10 +272,17 @@ namespace Sexy
         /// </summary>
         public void ToggleFullscreen()
         {
+            // Port: on the desktop SDL's own borderless full screen, which brings the window back as it was
+            // (size, place, maximized); MonoGame's switch below left a later maximize wrongly sized.
+            if (!IsMobile && SdlWindow.TrySetFullscreen(Window.Handle, !SdlWindow.IsFullscreen(Window.Handle)))
+            {
+                OnResize(null, null);
+                return;
+            }
             GraphicsDeviceManager aManager = Main.graphics.GraphicsDeviceManager;
             if (!aManager.IsFullScreen)
             {
-                mWindowedSize = new Point(Window.ClientBounds.Width, Window.ClientBounds.Height);
+                mWindowedSize = new Point(WindowBounds().Width, WindowBounds().Height);
                 mWindowedLandscape = Constants.Landscape;
                 DisplayMode aMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
                 aManager.HardwareModeSwitch = false;
@@ -249,7 +315,7 @@ namespace Sexy
         public void InterfaceRotated()
         {
             GraphicsDeviceManager aManager = Main.graphics.GraphicsDeviceManager;
-            Rectangle aBounds = Window.ClientBounds;
+            Rectangle aBounds = WindowBounds();
             if (!IsMobile && !aManager.IsFullScreen && (aBounds.Width > aBounds.Height) != Constants.Landscape)
             {
                 aManager.PreferredBackBufferWidth = aBounds.Height;
@@ -302,11 +368,11 @@ namespace Sexy
         {
             GraphicsState.Init();
             GlobalStaticVars.initialize(this);
-            MatchBackBufferToWindow(Window.ClientBounds);
-            GlobalStaticVars.gSexyAppBase.mScreenScales.Init(Window.ClientBounds.Width, Window.ClientBounds.Height, Constants.ScreenWidth, Constants.ScreenHeight);
+            MatchBackBufferToWindow(WindowBounds());
+            GlobalStaticVars.gSexyAppBase.mScreenScales.Init(WindowBounds().Width, WindowBounds().Height, Constants.ScreenWidth, Constants.ScreenHeight);
             Graphics.Resized();
             // The window may not have the shape asked for (the desktop clamps it to the monitor).
-            mPendingLayout = Constants.RelayoutFor(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            mPendingLayout = Constants.RelayoutFor(WindowBounds().Width, WindowBounds().Height);
             GlobalStaticVars.gSexyAppBase.StartLoadingThread();
         }
 
@@ -337,6 +403,8 @@ namespace Sexy
             {
                 HandleInput(gameTime);
             }
+            CheckWindowSize();
+            FollowSurfaceOrientation(GlobalStaticVars.gSexyAppBase);
             UpdateLayout(GlobalStaticVars.gSexyAppBase);
             long aStart = System.Diagnostics.Stopwatch.GetTimestamp();
             GlobalStaticVars.gSexyAppBase.UpdateApp();
@@ -374,6 +442,62 @@ namespace Sexy
                 mPendingLayout = null;
                 FitToWindow();
             }
+        }
+
+        /// <summary>
+        /// Port (phones and tablets): the interface turns with the surface where the game allows it now
+        /// (ShouldAutorotateToInterfaceOrientation: the landscape bookshelf from the board), as on iOS; asked
+        /// every update, so a turn that was not allowed yet (a dialog was up) follows once it is.
+        /// </summary>
+        private void FollowSurfaceOrientation(SexyAppBase theApp)
+        {
+            Rectangle aBounds = WindowBounds();
+            if (!IsMobile || theApp == null || aBounds.Width <= 0 || aBounds.Height <= 0)
+            {
+                return;
+            }
+            bool aLandscape = aBounds.Width > aBounds.Height;
+            if (aLandscape == Constants.Landscape)
+            {
+                return;
+            }
+            UI_ORIENTATION anOrientation = aLandscape ? UI_ORIENTATION.UI_ORIENTATION_LANDSCAPE_LEFT : UI_ORIENTATION.UI_ORIENTATION_PORTRAIT;
+            if (theApp.ShouldAutorotateToInterfaceOrientation(anOrientation))
+            {
+                theApp.InterfaceOrientationChanged(anOrientation);
+            }
+        }
+
+        /// <summary>
+        /// Port: lays the game out for the window's size now, without waiting for the window to settle (the splash
+        /// going: the window may have been resized while loading, when the layout cannot change). False when the game cannot take a new layout now (SexyAppBase.ApplyLayout).
+        /// </summary>
+        public bool RelayoutNow(SexyAppBase theApp)
+        {
+            Rectangle aBounds = WindowBounds();
+            if (aBounds.Width <= 0 || aBounds.Height <= 0)
+            {
+                return true;
+            }
+            FitToWindow();
+            mPendingLayout = Constants.RelayoutFor(aBounds.Width, aBounds.Height);
+            return ApplyPendingLayoutNow(theApp);
+        }
+
+        /// <summary>Port: as RelayoutNow, with the layout the window asked for last.</summary>
+        public bool ApplyPendingLayoutNow(SexyAppBase theApp)
+        {
+            if (mPendingLayout is not Point aSize)
+            {
+                return true;
+            }
+            if (aSize != Constants.BackBufferSize && !theApp.ApplyLayout(aSize))
+            {
+                return false;
+            }
+            mPendingLayout = null;
+            FitToWindow();
+            return true;
         }
 
         public static void SuppressNextDraw()

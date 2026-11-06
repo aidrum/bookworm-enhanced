@@ -224,7 +224,7 @@ namespace Sexy
                 aLex.PlayAnim(0x16, false);
                 return;
             }
-            if (mPieces[0].mY < aPos.At(0x17c) + aBoard.mY && aLex.IsIdleOrSparkling())
+            if (mPieces[0].mY < aBoard.ToShown(aPos.At(0x17c)) + aBoard.mY && aLex.IsIdleOrSparkling())
             {
                 aLex.PlayAnim(0x15, false);
             }
@@ -287,6 +287,7 @@ namespace Sexy
                 else if (aPiece.mType == Piece.TYPE_FIRE && mAge % 3 == 0)
                 {
                     Ember anEmber = aBoard.mEmbers.Add();
+                    anEmber.mUnscaled = true;
                     anEmber.mType = 0;
                     anEmber.mX = aPiece.mX + mMgr.mRand.Next() % (uint)aTileW;
                     anEmber.mY = aPiece.mY + mMgr.mRand.Next() % (uint)aTileH;

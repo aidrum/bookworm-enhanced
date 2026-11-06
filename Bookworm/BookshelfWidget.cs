@@ -122,7 +122,7 @@ namespace Sexy
         /// </summary>
         public static void DrawPillars(Graphics g, ScreenPos thePos, int theX, int theY)
         {
-            if (!thePos.mIPadDesign)
+            if (!thePos.mPillars)
             {
                 return;
             }
