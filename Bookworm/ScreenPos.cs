@@ -169,6 +169,8 @@ namespace Sexy
             {
                 NarrowBoard(aScale);
             }
+            // Port: how far below Lex's mouth the board's top row is in the portrait game layout (FlyingPieceList).
+            mLexMouthGap = At(0x2d4) + At(0x17c) - At(0x94) - At(0x184);
             mWideGame = mIPadDesign && !Constants.Landscape && (long)theWidth * 3 >= (long)theHeight * 4;
             if (mWideGame)
             {
@@ -185,6 +187,12 @@ namespace Sexy
         /// The menu pages keep the portrait places (Lex's wide place is only taken with the board: mWideLex).
         /// </summary>
         public bool mWideGame;
+
+        /// <summary>Port: the portrait layout's distance from Lex's mouth (0x184 below him) down to the board's top row
+        /// (0x17c into the board), where the original opens his mouth for a word's tiles. FlyingPieceList opens it
+        /// once the first tile is this close to the mouth, which is the same in portrait and also works in the wide
+        /// game layout, where his mouth is below the board's top row.</summary>
+        public int mLexMouthGap;
 
         /// <summary>Port: true while the iPad design's side pillars are drawn (no extra width; see Init).</summary>
         public bool mPillars;

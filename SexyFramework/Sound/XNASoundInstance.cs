@@ -104,7 +104,8 @@ namespace Sexy
             {
                 mSound.IsLooped = looping;
             }
-            mSound.Volume = mBaseVolume * mVolume;
+            // MonoGame throws outside [0, 1]; the shake rattle asks for up to 1.5 (iOS clamped silently).
+            mSound.Volume = Math.Clamp(mBaseVolume * mVolume, 0f, 1f);
             mSound.Pan = Math.Min(Math.Max(-1f, mBasePan + mPan), 1f);
             // mPitch is in semitones (Sexy's AdjustPitch: rate = 2^(steps/12)); MonoGame's Pitch is
             // in octaves, clamped to +/-1.
