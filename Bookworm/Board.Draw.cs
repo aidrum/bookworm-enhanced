@@ -123,27 +123,74 @@ namespace Sexy
                 }
                 g.PopState();
             }
+            // Port (Spanish): the frame's right end (the pillar with "LVL") is its left end mirrored, "NV" drawn on it.
+            bool aSpanish = Localization.IsSpanish;
+            int aFrameX = aPos.At(0x158);
+            int aFrameY = aPos.At(0x15c);
             if (aGrowth > 0)
             {
-                DrawStretchedMiddle(g, aFrame, aPos.At(0x158), aPos.At(0x15c), aPos.mWideBarWidth);
+                DrawStretchedMiddle(g, aFrame, aFrameX, aFrameY, aPos.mWideBarWidth, aSpanish);
+            }
+            else if (aSpanish)
+            {
+                int aHalf = (aFrame.mWidth + 1) / 2;
+                TRect aLeftHalf = new TRect(0, 0, aHalf, aFrame.mHeight);
+                g.DrawImage(aFrame, aFrameX, aFrameY, aLeftHalf);
+                g.DrawImageMirror(aFrame, aFrameX + aFrame.mWidth - aHalf, aFrameY, aLeftHalf);
             }
             else
             {
-                g.DrawImage(aFrame, aPos.At(0x158), aPos.At(0x15c));
+                g.DrawImage(aFrame, aFrameX, aFrameY);
+            }
+            if (aSpanish)
+            {
+                DrawLevelLabel(g, aFrame, aFrameX + aFrame.mWidth + aGrowth, aFrameY);
             }
         }
+
+        /// <summary>
+        /// Port (Spanish): "NV" where the frame's "LVL" was, in its lettering: the outlined Arial Rounded (its fill a
+        /// layer of its own to colour; the large outlined font's iPad Retina one is a single layer), lime (grey when
+        /// greyed) brighter toward the bottom, its capitals as high and centred as LVL's. The places are the iPad
+        /// Retina frame's (1284 x 268), from its right edge (theRight: the pillar stays at the end when widened).
+        /// </summary>
+        private void DrawLevelLabel(Graphics g, Image theFrame, int theRight, int theY)
+        {
+            float aUnit = theFrame.mHeight / 268f;
+            int aCenterX = theRight - (int)System.Math.Round((1284 - 1213.5f) * aUnit);
+            int aCenterY = theY + (int)System.Math.Round(102 * aUnit);
+            Color aTop = mGreyed ? LEVEL_LABEL_GREY_TOP : LEVEL_LABEL_TOP;
+            Color aBottom = mGreyed ? LEVEL_LABEL_GREY_BOTTOM : LEVEL_LABEL_BOTTOM;
+            GradientText.DrawFitted(g, Res.FONT_ARIAL_MEDIUM_OUTLINED, new[] { "NV" }, aCenterX, aCenterY,
+                (int)System.Math.Round(71 * aUnit), (int)System.Math.Round(27 * aUnit), aTop, aBottom);
+        }
+
+        /// <summary>Port: the "LVL" art's lime, top to bottom, and its greyed frame's grey.</summary>
+        private static readonly Color LEVEL_LABEL_TOP = new Color(135, 183, 0, 255);
+
+        private static readonly Color LEVEL_LABEL_BOTTOM = new Color(181, 244, 0, 255);
+
+        private static readonly Color LEVEL_LABEL_GREY_TOP = new Color(112, 112, 114, 255);
+
+        private static readonly Color LEVEL_LABEL_GREY_BOTTOM = new Color(148, 148, 150, 255);
 
         /// <summary>
         /// Port (wide game layout): the bar's frame at theWidth: its ends (the menu button's and the level's pillars,
         /// BAR_END_PARTS of its width each) as they are, its plain middle stretched between them.
         /// </summary>
-        private static void DrawStretchedMiddle(Graphics g, Image theImage, int theX, int theY, int theWidth)
+        private static void DrawStretchedMiddle(Graphics g, Image theImage, int theX, int theY, int theWidth, bool theMirrorLeft = false)
         {
             int anEnd = theImage.mWidth * BAR_END_PARTS / 0x280;
             int aHeight = theImage.mHeight;
             int aMiddle = theImage.mWidth - anEnd * 2;
             g.DrawImage(theImage, new TRect(theX, theY, anEnd, aHeight), new TRect(0, 0, anEnd, aHeight));
             g.DrawImage(theImage, new TRect(theX + anEnd, theY, theWidth - anEnd * 2, aHeight), new TRect(anEnd, 0, aMiddle, aHeight));
+            if (theMirrorLeft)
+            {
+                // Port (Spanish): the left end mirrored, in place of the right end's "LVL".
+                g.DrawImageMirror(theImage, theX + theWidth - anEnd, theY, new TRect(0, 0, anEnd, aHeight));
+                return;
+            }
             g.DrawImage(theImage, new TRect(theX + theWidth - anEnd, theY, anEnd, aHeight), new TRect(theImage.mWidth - anEnd, 0, anEnd, aHeight));
         }
 
