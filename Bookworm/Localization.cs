@@ -104,7 +104,7 @@ namespace Sexy
             { "Submit by Keyboard", "El teclado" },
             { "You may also submit selected words by pressing the ENTER key on the keyboard.",
                 "Para enviar las palabras seleccionadas también puedes pulsar la tecla ENTER del teclado." },
-            { "Bonus Word!", "¡Palabra de bonificación!" },
+            { "Bonus Word!", "¡Bonificación!" },
             { "For even more points, submit a word that matches the Bonus Word.",
                 "Para conseguir más puntos, envía una palabra que coincida con la Palabra de bonificación." },
             { "Fire Alert!", "¡Incendio!" },
@@ -114,7 +114,7 @@ namespace Sexy
             { "That burning tile is too close!\n\nUse it soon or your library will catch fire!",
                 "¡Esa ficha de fuego está demasiado cerca!\n\n¡Úsala pronto o tu biblioteca se incendiará!" },
             // CLICK_DISABLE_HINTS, CONTINUE, CANCEL, OK
-            { "Disable Hints", "Desactivar las pistas" },
+            { "Disable Hints", "Desactivar pistas" },
             { "Continue", "Continuar" },
             { "CONTINUE", "CONTINUAR" },
             { "Cancel", "Cancelar" },
@@ -136,7 +136,7 @@ namespace Sexy
             { "Make the word", "Haz la palabra" },
             { "for bonus points!", "para puntos bonus!" },
             // X_BONUS
-            { "+{0} BONUS!", "+{0} ¡BONIFICACIÓN!" },
+            { "+{0} BONUS!", "+{0} ¡BONUS!" },
             // YOUR_RANK, NEXT_RANK_AT + PTS, TIME, LEVEL_X, TOTAL
             { "Your Rank", "Tu posición" },
             { "Next Rank at {0} pts", "Próxima posición a {0} puntos" },
@@ -195,7 +195,7 @@ namespace Sexy
                 "¡Toca el globo de la palabra o la última ficha para enviar tu palabra!" },
             { "Shake your device to scramble all of your tiles!", "¡Tócame o agita el dispositivo para mezclar todas tus fichas!" },
             { "Turn your device to see the Bonus Book List! Can you spell them all?",
-                "¡Gira el dispositivo para ver la lista de libros de bonificación! ¿Podrás formar todas sus palabras?" },
+                "¡Gira el dispositivo para ver la lista de libros bonus! ¿Podrás formar todas sus palabras?" },
             { "Credits: (n.) Acknowledgement and praise for the awesome creators of Lex!",
                 "Créditos: (m. pl.) ¡Reconocimiento y elogio para los geniales creadores de Lex!" },
             { "Update (n): The act or an instance of bringing something up to date. Now with 64-bit support!",
