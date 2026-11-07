@@ -119,6 +119,29 @@ namespace Sexy
             return theApp.GetImage(thePath + aSuffix, false);
         }
 
+        /// <summary>A capital's height against the font's ascent (estimated: the fonts' metrics hold no cap height).</summary>
+        private const float CAP_RATIO = 0.72f;
+
+        /// <summary>
+        /// Draws the lines centred on (theCenterX, theCenterY) by their capitals (the first line's cap top to the
+        /// last's baseline), shrunk to fit theMaxWidth and theMaxHeight (never grown). theLinePitch is the baseline
+        /// step before scaling (0: 1.25 capitals).
+        /// </summary>
+        public static void DrawFitted(Graphics g, Font theFont, string[] theLines, int theCenterX, int theCenterY, int theMaxWidth, int theMaxHeight, Color theTop, Color theBottom, Color? theOutline = null, int theLinePitch = 0)
+        {
+            float aCap = theFont.GetAscent() * CAP_RATIO;
+            int aPitch = theLinePitch > 0 ? theLinePitch : (int)System.Math.Round(aCap * 1.25f);
+            int aWidest = 1;
+            foreach (string aLine in theLines)
+            {
+                aWidest = System.Math.Max(aWidest, theFont.StringWidth(aLine));
+            }
+            float aBlock = aCap + aPitch * (theLines.Length - 1);
+            float aScale = System.Math.Min(1f, System.Math.Min(theMaxWidth / (float)aWidest, theMaxHeight / aBlock));
+            int aFirstBaseline = theCenterY + (int)System.Math.Round(aScale * (aCap - aPitch * (theLines.Length - 1)) / 2f);
+            Draw(g, theFont, theLines, theCenterX, aFirstBaseline, theTop, theBottom, theOutline, aPitch, aScale);
+        }
+
         /// <summary>A banner's title: one line, centred on a banner drawn at (theX, theY), theWidth wide.</summary>
         public static void DrawBannerTitle(Graphics g, string theTitle, int theX, int theY, int theWidth)
         {

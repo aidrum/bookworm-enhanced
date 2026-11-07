@@ -132,10 +132,9 @@ namespace Sexy
             mCheckForUpdatesLabel = MakeLabel("");
             mCheckForUpdatesSwitch = MakeSwitch(SWITCH_CHECK_FOR_UPDATES);
             mTexturesLabel = MakeLabel("");
-            mTexturesButton = new BarButton(LINK_TEXTURES, this, theApp, AtlasResourceBase.IMAGE_GROUP11_03);
-            mTexturesButton.SetFont(Res.FONT_COOPER_OUTLINED);
-            mTexturesButton.SetColor(0, Dialogoid.GREEN_BUTTON_COLOR);
-            mTexturesButton.SetColor(1, new Color(255, 255, 255, 255));
+            // Port: drawn as a switch's ON track, its label in the switches' ON / OFF lettering.
+            mTexturesButton = new BarButton(LINK_TEXTURES, this, theApp, AtlasResourceBase.IMAGE_GROUP1_20, AtlasResourceBase.IMAGE_GROUP1_22);
+            mTexturesButton.SetFont(Res.FONT_ARIAL_LARGE);
             AddWidget(mTexturesButton);
             mRestartLabel = new LabelWidget("", Res.FONT_DEFINITIONS_SMALL);
             mRestartLabel.mClip = false;
@@ -519,42 +518,68 @@ namespace Sexy
     /// Port addition: a button on one of the dialogs' bars (green or red), sized to its label: the bar's ends
     /// keep their shape (scaled to the button's height) and its middle stretches.
     /// </summary>
+    /// <summary>
+    /// Port: a button drawn as a switch's green ON track (a little less tall than a switch, its rounded ends
+    /// kept, stretched to the label), its label in uppercase in the switches' ON / OFF lettering.
+    /// </summary>
     public class BarButton : BookWormButton
     {
+        /// <summary>The track's height against a switch's (the art's own height).</summary>
+        private const float SQUISH = 1f;
+
+        private static readonly Color TEXT_COLOR = new Color(255, 255, 255, 255);
+
+        private static readonly Color PRESSED_COLOR = new Color(190, 190, 190, 255);
+
         private readonly Image mBar;
 
-        public BarButton(int theId, ButtonListener theListener, BookWormApp theApp, Image theBar) : base(theId, theListener, theApp)
+        private readonly Image mLabelArt;
+
+        /// <summary>theBar the switch's ON track; theLabelArt its OFF label art (for the lettering's size).</summary>
+        public BarButton(int theId, ButtonListener theListener, BookWormApp theApp, Image theBar, Image theLabelArt) : base(theId, theListener, theApp)
         {
             mBar = theBar;
-            mLabelJustify = 0;
+            mLabelArt = theLabelArt;
             mClip = false;
         }
 
-        /// <summary>The label with room around it: half its height above and below, the bar's ends beside it.</summary>
-        public void SizeToLabel()
+        private float CapHeight()
         {
-            int aHeight = mFont.GetHeight() * 3 / 2;
-            int aWidth = mFont.StringWidth(mLabel) + 2 * EndWidth(aHeight) + mFont.GetHeight() / 2;
-            Resize(mX + mWidth - aWidth, mY, aWidth, aHeight);
+            return Switch.LabelCapHeight(mLabelArt) * SQUISH;
         }
 
-        /// <summary>The width of the bar's ends (their scrolls: a quarter of its height) at this height.</summary>
-        private int EndWidth(int theHeight)
+        /// <summary>The label with the track's rounded ends (half its height each) and as much again around it.</summary>
+        public void SizeToLabel()
         {
-            return theHeight / 4 + 1;
+            int aHeight = (int)System.Math.Round(mBar.mHeight * SQUISH);
+            int aWidth = (int)System.Math.Ceiling(Switch.CapTextWidth(mFont, mLabel.ToUpperInvariant(), CapHeight())) + aHeight * 3 / 2;
+            aWidth = System.Math.Max(aWidth, aHeight * 2);
+            Resize(mX + mWidth - aWidth, mY, aWidth, aHeight);
         }
 
         public override void Draw(Graphics g)
         {
-            if (!mBtnNoDraw && mBar != null)
+            if (mBtnNoDraw || mBar == null)
             {
-                int anEnd = mBar.mHeight / 4 + 1;
-                int aDestEnd = System.Math.Min(EndWidth(mHeight), mWidth / 2);
-                g.DrawImage(mBar, new TRect(0, 0, aDestEnd, mHeight), new TRect(0, 0, anEnd, mBar.mHeight));
-                g.DrawImage(mBar, new TRect(aDestEnd, 0, mWidth - 2 * aDestEnd, mHeight), new TRect(anEnd, 0, mBar.mWidth - 2 * anEnd, mBar.mHeight));
-                g.DrawImage(mBar, new TRect(mWidth - aDestEnd, 0, aDestEnd, mHeight), new TRect(mBar.mWidth - anEnd, 0, anEnd, mBar.mHeight));
+                return;
             }
-            base.Draw(g);
+            bool aPressed = mIsOver && mIsDown && !mDisabled;
+            if (aPressed)
+            {
+                g.SetColorizeImages(true);
+                g.SetColor(PRESSED_COLOR);
+            }
+            // The ends (half the art's height, its rounded caps) scaled with the height; the middle stretched.
+            int anEnd = mBar.mHeight / 2;
+            int aDestEnd = System.Math.Min(mHeight / 2, mWidth / 2);
+            g.DrawImage(mBar, new TRect(0, 0, aDestEnd, mHeight), new TRect(0, 0, anEnd, mBar.mHeight));
+            g.DrawImage(mBar, new TRect(aDestEnd, 0, mWidth - 2 * aDestEnd, mHeight), new TRect(anEnd, 0, mBar.mWidth - 2 * anEnd, mBar.mHeight));
+            g.DrawImage(mBar, new TRect(mWidth - aDestEnd, 0, aDestEnd, mHeight), new TRect(mBar.mWidth - anEnd, 0, anEnd, mBar.mHeight));
+            g.SetColorizeImages(false);
+            if (mFont != null && !string.IsNullOrEmpty(mLabel))
+            {
+                Switch.DrawCapText(g, mFont, mLabel.ToUpperInvariant(), mWidth / 2f, mHeight / 2f, CapHeight(), aPressed ? PRESSED_COLOR : TEXT_COLOR);
+            }
         }
     }
 }

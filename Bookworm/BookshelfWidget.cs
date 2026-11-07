@@ -145,8 +145,65 @@ namespace Sexy
             {
                 DrawPillars(g, aPos, 0, 0);
             }
-            g.DrawImage(AtlasResourceBase.IMAGE_GROUP7_04, mShelfTopPos.mX, mShelfTopPos.mY);
+            DrawBonusList(g);
             g.DrawImage(AtlasResourceBase.IMAGE_GROUP7_05, mSignPos.mX, mSignPos.mY);
+        }
+
+        /// <summary>Port (Spanish): the bonus list square without its English text (AtlasResourceBase localized art).</summary>
+        private Image mBlankBonusList;
+
+        private bool mBlankBonusListLoaded;
+
+        /// <summary>The "BONUS BOOK LIST" art's gold, top to bottom.</summary>
+        private static readonly Color BONUS_LIST_TOP = new Color(250, 236, 120, 255);
+
+        private static readonly Color BONUS_LIST_BOTTOM = new Color(222, 160, 15, 255);
+
+        /// <summary>
+        /// IMAGE_GROUP7_04, the "BONUS BOOK LIST" square over the collection shelf. Port: in Spanish, the same
+        /// square without its text (made at the atlas's scale) with "LIBROS BONUS" drawn over it.
+        /// </summary>
+        private void DrawBonusList(Graphics g)
+        {
+            Image anImage = AtlasResourceBase.IMAGE_GROUP7_04;
+            if (Localization.IsSpanish && !mBlankBonusListLoaded)
+            {
+                mBlankBonusList = AtlasResourceBase.GetLocalizedImage(mApp, anImage.mWidth / 80, AtlasResourceBase.LOCALIZED_BLANK_BONUS_LIST);
+                mBlankBonusListLoaded = true;
+            }
+            if (!Localization.IsSpanish || mBlankBonusList == null)
+            {
+                g.DrawImage(anImage, mShelfTopPos.mX, mShelfTopPos.mY);
+                return;
+            }
+            int aWidth = anImage.mWidth;
+            int aHeight = anImage.mHeight;
+            g.DrawImage(mBlankBonusList, mShelfTopPos.mX, mShelfTopPos.mY, aWidth, aHeight);
+            GradientText.DrawFitted(g, Res.FONT_COOPER_OUTLINED, new[] { "LIBROS", "BONUS" }, mShelfTopPos.mX + aWidth / 2, mShelfTopPos.mY + aHeight / 2,
+                aWidth * 84 / 100, aHeight * 64 / 100, BONUS_LIST_TOP, BONUS_LIST_BOTTOM, GradientText.BANNER_OUTLINE);
+        }
+
+        /// <summary>The "Complete" art's green (IMAGE_GROUP31_24), top to bottom, and its dark outline.</summary>
+        private static readonly Color COMPLETE_TOP = new Color(205, 238, 40, 255);
+
+        private static readonly Color COMPLETE_BOTTOM = new Color(105, 170, 0, 255);
+
+        private static readonly Color COMPLETE_OUTLINE = new Color(40, 70, 0, 255);
+
+        /// <summary>
+        /// IMAGE_GROUP31_24, the green "Complete" under the percent, at (theX, theY). Port: in Spanish, "Completado"
+        /// in the same green, centred on it (a little wider than the art if need be: the sign is wider).
+        /// </summary>
+        private static void DrawCompleteText(Graphics g, int theX, int theY)
+        {
+            Image anImage = AtlasResourceBase.IMAGE_GROUP31_24;
+            if (!Localization.IsSpanish)
+            {
+                g.DrawImage(anImage, theX, theY);
+                return;
+            }
+            GradientText.DrawFitted(g, Res.FONT_COOPER_OUTLINED, new[] { "Completado" }, theX + anImage.mWidth / 2, theY + anImage.mHeight / 2,
+                anImage.mWidth * 110 / 100, anImage.mHeight * 70 / 100, COMPLETE_TOP, COMPLETE_BOTTOM, COMPLETE_OUTLINE);
         }
 
         /// <summary>
@@ -192,7 +249,7 @@ namespace Sexy
                 g.DrawImage(AtlasResourceBase.IMAGE_GROUP31_03, mSignPos.mX + aPos.At(0xd0), mSignPos.mY + aPos.At(0xd4));
                 return;
             }
-            g.DrawImage(AtlasResourceBase.IMAGE_GROUP31_24, mSignPos.mX + aPos.At(0xc8), mSignPos.mY + aPos.At(0xcc));
+            DrawCompleteText(g, mSignPos.mX + aPos.At(0xc8), mSignPos.mY + aPos.At(0xcc));
             Font aFont = Res.FONT_ARIAL_LARGE;
             g.SetFont(aFont);
             g.SetColor(PERCENT_COLOR);

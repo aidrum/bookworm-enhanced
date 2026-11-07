@@ -1,6 +1,8 @@
 <moreGames>
-	<lexText>Check out other cool stuff! (Unaffiliated)</lexText>
+	<lexText>Check out other cool stuff!</lexText>
  
+<entry image="moregames_peggle_enhanced.png"   link="https://github.com/aidrum/peggle-enhanced/releases/latest" /> 
+
 <entry image="moregames_bejplus.png"   link="https://github.com/ariidesu/BejeweledPlus/releases/latest" />
 
 <entry image="moregames_plantsvszombiesultimate.png"   link="https://discord.gg/ZJu3QUBw2w" />

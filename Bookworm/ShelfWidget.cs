@@ -292,6 +292,41 @@ namespace Sexy
             Resize(0, 0, aShelf.mWidth, aShelf.mHeight * mRects.Length);
         }
 
+        /// <summary>
+        /// The labels' art (IMAGE_GROUP31_01's cels, iPad Retina rows of 192): the number above row NUMBER_ROWS,
+        /// "letter words" below; "letras" goes where those were, in their gold (white to yellow).
+        /// </summary>
+        private const int LABEL_ROWS = 192;
+
+        private const int NUMBER_ROWS = 102;
+
+        private const int LETRAS_BASELINE = 144;
+
+        private const float LETRAS_SCALE = 0.7f;
+
+        private static readonly Color LETRAS_TOP = new Color(255, 248, 190, 255);
+
+        private static readonly Color LETRAS_BOTTOM = new Color(240, 200, 10, 255);
+
+        /// <summary>
+        /// The shelf's label, cel theIndex of IMAGE_GROUP31_01 ("3 letter words" to "12 letter words"). Port: in
+        /// Spanish, only the cel's number, with "letras" drawn under it.
+        /// </summary>
+        private static void DrawLengthLabel(Graphics g, int theX, int theY, int theIndex)
+        {
+            Image anImage = AtlasResourceBase.IMAGE_GROUP31_01;
+            if (!Localization.IsSpanish)
+            {
+                g.DrawImageCel(anImage, theX, theY, theIndex);
+                return;
+            }
+            int aCelWidth = anImage.GetCelWidth();
+            int aCelHeight = anImage.GetCelHeight();
+            g.DrawImage(anImage, theX, theY, new TRect(theIndex * aCelWidth, 0, aCelWidth, aCelHeight * NUMBER_ROWS / LABEL_ROWS));
+            GradientText.Draw(g, Res.FONT_ARIAL_MEDIUM_OUTLINED, new[] { "letras" }, theX + aCelWidth / 2, theY + aCelHeight * LETRAS_BASELINE / LABEL_ROWS,
+                LETRAS_TOP, LETRAS_BOTTOM, null, 0, LETRAS_SCALE);
+        }
+
         /// <summary>0x3a044.</summary>
         public override void Draw(Graphics g)
         {
@@ -302,7 +337,7 @@ namespace Sexy
             {
                 TRect aRect = mRects[i];
                 g.DrawImage(AtlasResourceBase.IMAGE_GROUP7_01, aRect.mX, aRect.mY);
-                g.DrawImageCel(AtlasResourceBase.IMAGE_GROUP31_01, aPos.At(0xa8) + aRect.mX, aPos.At(0xac) + aRect.mY, i);
+                DrawLengthLabel(g, aPos.At(0xa8) + aRect.mX, aPos.At(0xac) + aRect.mY, i);
                 int aCount = mApp.mCollectionator.mWordCounts[i];
                 int aX = aPos.At(0xb0);
                 int aBase = aPos.At(0xb4);

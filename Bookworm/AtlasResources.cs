@@ -80,26 +80,31 @@ namespace Sexy
         /// Port (translations): the art made for the other languages, one sheet per art scale (images/localized.png
         /// at the iPhone's, localizedR at 2x, localizediPadR at 4x; GradientText.LoadScaled): the banners' frame
         /// without its English title (the Word History and More Games banners), and the Continue ribbon with
-        /// "Juego Guardado" (IMAGE_GROUP11_16's Spanish). Loaded on first use, once per scale; null without it.
+        /// "Juego Guardado" (IMAGE_GROUP11_16's Spanish), and the Books tab's bonus list square without its "BONUS
+        /// BOOK LIST" (IMAGE_GROUP7_04). Loaded on first use, once per scale; null without it.
         /// </summary>
         public const int LOCALIZED_BLANK_BANNER = 0;
 
         public const int LOCALIZED_SAVED_GAME_ES = 1;
 
+        public const int LOCALIZED_BLANK_BONUS_LIST = 2;
+
+        private const int LOCALIZED_COUNT = 3;
+
         private static readonly System.Collections.Generic.Dictionary<int, Image[]> mLocalizedImages =
             new System.Collections.Generic.Dictionary<int, Image[]>();
 
-        /// <summary>Each scale's sheet: the blank banner, then the ribbon right of it (1 pixel apart).</summary>
+        /// <summary>Each scale's sheet: the blank banner, then the ribbon and the square right of it (1 pixel apart).</summary>
         private static int[,] LocalizedTable(int theScale)
         {
             switch (theScale)
             {
             case 4:
-                return new int[,] { { 0, 0, 0, 1280, 236, 1, 1, 0, 0, 0, 0 }, { 1, 1281, 0, 188, 324, 1, 1, 0, 0, 0, 0 } };
+                return new int[,] { { 0, 0, 0, 1280, 236, 1, 1, 0, 0, 0, 0 }, { 1, 1281, 0, 188, 324, 1, 1, 0, 0, 0, 0 }, { 2, 1470, 0, 320, 320, 1, 1, 0, 0, 0, 0 } };
             case 2:
-                return new int[,] { { 0, 0, 0, 640, 118, 1, 1, 0, 0, 0, 0 }, { 1, 641, 0, 94, 162, 1, 1, 0, 0, 0, 0 } };
+                return new int[,] { { 0, 0, 0, 640, 118, 1, 1, 0, 0, 0, 0 }, { 1, 641, 0, 94, 162, 1, 1, 0, 0, 0, 0 }, { 2, 736, 0, 160, 160, 1, 1, 0, 0, 0, 0 } };
             default:
-                return new int[,] { { 0, 0, 0, 320, 62, 1, 1, 0, 0, 0, 0 }, { 1, 321, 0, 47, 81, 1, 1, 0, 0, 0, 0 } };
+                return new int[,] { { 0, 0, 0, 320, 62, 1, 1, 0, 0, 0, 0 }, { 1, 321, 0, 47, 81, 1, 1, 0, 0, 0, 0 }, { 2, 369, 0, 80, 80, 1, 1, 0, 0, 0, 0 } };
             }
         }
 
@@ -109,7 +114,7 @@ namespace Sexy
             int aScale = theScale >= 4 ? 4 : theScale >= 2 ? 2 : 1;
             if (!mLocalizedImages.TryGetValue(aScale, out Image[] anImages))
             {
-                anImages = new Image[2];
+                anImages = new Image[LOCALIZED_COUNT];
                 Image aSheet = GradientText.LoadScaled(theApp, "images/localized", aScale);
                 if (aSheet != null)
                 {

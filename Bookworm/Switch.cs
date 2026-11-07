@@ -71,14 +71,37 @@ namespace Sexy
         /// </summary>
         private void DrawLabelText(Graphics g, string theText, Image theLabel, int theX, int theY, Color theColor)
         {
-            Font aFont = mTextFont;
             float aCap = mOffLabel.mHeight * LABEL_CAP_HEIGHT;
+            DrawCapText(g, mTextFont, theText, theX + theLabel.mWidth / 2f, theY + theLabel.mHeight / 2f, aCap, theColor);
+        }
+
+        /// <summary>Port: the cap height of the ON / OFF names for a switch whose OFF label art is theLabel.</summary>
+        public static float LabelCapHeight(Image theLabel)
+        {
+            return theLabel.mHeight * LABEL_CAP_HEIGHT;
+        }
+
+        /// <summary>Port: the ink width of theText drawn by DrawCapText at theCap.</summary>
+        public static float CapTextWidth(Font theFont, string theText, float theCap)
+        {
+            MeasureInk(theFont, theText, out int anInkLeft, out int anInkRight);
+            return (anInkRight - anInkLeft) * theCap / System.Math.Max(1, MeasureCapHeight(theFont)) * TEXT_STRETCH_X;
+        }
+
+        /// <summary>
+        /// Port: theText in the switches' ON / OFF style (theFont stretched to the art's proportions), its ink
+        /// centred on theCenterX, its capitals theCap high and centred on theCenterY.
+        /// </summary>
+        public static void DrawCapText(Graphics g, Font theFont, string theText, float theCenterX, float theCenterY, float theCap, Color theColor)
+        {
+            Font aFont = theFont;
+            float aCap = theCap;
             MeasureInk(aFont, theText, out int anInkLeft, out int anInkRight);
             int aFontCap = MeasureCapHeight(aFont);
             float aScaleY = aCap / System.Math.Max(1, aFontCap);
             float aScaleX = aScaleY * TEXT_STRETCH_X;
-            float aCenterX = theX + theLabel.mWidth / 2f;
-            float aBaseline = theY + (theLabel.mHeight + aCap) / 2f;
+            float aCenterX = theCenterX;
+            float aBaseline = theCenterY + aCap / 2f;
             // Drawn at the origin of the scale with its ink centred on it, then scaled out from there.
             int aDrawX = (int)System.Math.Round(aCenterX - (anInkLeft + anInkRight) / 2f);
             int aDrawY = (int)System.Math.Round(aBaseline);

@@ -7,6 +7,10 @@ namespace Sexy
         /// <summary>How the current touch is being used (0x1dc): 0 picking, 1 released, 2 dragging, 3 on the last tile.</summary>
         public int mTouchMode;
 
+        /// <summary>Port (Submit by Dragging): the current touch has dragged. mTouchMode stays 2 after a drag
+        /// ends, so it can't tell a later tap from a drag.</summary>
+        private bool mTouchDragged;
+
         /// <summary>The word being spelled (0x214).</summary>
         public WordScore mWordScore;
 
@@ -205,6 +209,7 @@ namespace Sexy
             x = FromShown(x);
             y = FromShown(y);
             base.MouseDown(x, y, theClickCount);
+            mTouchDragged = false;
             if (mState != STATE_PLAYING)
             {
                 return;
@@ -273,10 +278,10 @@ namespace Sexy
                 {
                     mTouchMode = 1;
                 }
-                else if (mTouchMode == 2 && mApp.mSubmitByDragging && mSelection.Count > 0 && mWordScore.mValid)
+                else if (mTouchMode == 2 && mTouchDragged && mApp.mSubmitByDragging && mSelection.Count > 0 && mWordScore.mValid)
                 {
                     // Port (Submit by Dragging): a touch that dragged (from any tile of the word, or a new one)
-                    // submits the word when let go if it is valid; a tap never does.
+                    // submits the word when let go if it is valid; a tap never does, even after an earlier drag.
                     Piece aLast = mSelection[mSelection.Count - 1];
                     SubmitWord((int)(aLast.mX + mTileWidth / 2), (int)(aLast.mY + mTileHeight / 2));
                 }
@@ -301,6 +306,7 @@ namespace Sexy
                 return;
             }
             mTouchMode = 2;
+            mTouchDragged = true;
             if (IsAdjacent(aLast, aTarget) && !aTarget.mRemoving)
             {
                 SelectPiece(aTarget);
