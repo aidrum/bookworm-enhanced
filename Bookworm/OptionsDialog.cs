@@ -37,6 +37,12 @@ namespace Sexy
         /// <summary>Port: the extra options' Check for Updates switch (BookWormApp.mCheckForUpdates, UpdateChecker).</summary>
         public const int SWITCH_CHECK_FOR_UPDATES = 10;
 
+        /// <summary>Port: the extra options' UI layout (a tap picks the next: Auto, iPhone, iPad).</summary>
+        public const int LINK_LAYOUT = 11;
+
+        /// <summary>Port: the UI layout names (Constants.LAYOUT_MODE_*).</summary>
+        private static readonly string[] LAYOUT_NAMES = { "Auto", "iPhone", "iPad" };
+
         /// <summary>Port: the texture quality names, Low to High (Constants.TEXTURE_SIDES).</summary>
         private static readonly string[] TEXTURE_NAMES = { "Low", "Medium", "High" };
 
@@ -86,6 +92,10 @@ namespace Sexy
 
         public Switch mCheckForUpdatesSwitch;
 
+        public LabelWidget mLayoutLabel;
+
+        public BarButton mLayoutButton;
+
         public LabelWidget mTexturesLabel;
 
         public BarButton mTexturesButton;
@@ -131,6 +141,10 @@ namespace Sexy
             mSubmitByDraggingSwitch = MakeSwitch(SWITCH_SUBMIT_BY_DRAGGING);
             mCheckForUpdatesLabel = MakeLabel("");
             mCheckForUpdatesSwitch = MakeSwitch(SWITCH_CHECK_FOR_UPDATES);
+            mLayoutLabel = MakeLabel("");
+            mLayoutButton = new BarButton(LINK_LAYOUT, this, theApp, AtlasResourceBase.IMAGE_GROUP1_20, AtlasResourceBase.IMAGE_GROUP1_22);
+            mLayoutButton.SetFont(Res.FONT_ARIAL_LARGE);
+            AddWidget(mLayoutButton);
             mTexturesLabel = MakeLabel("");
             // Port: drawn as a switch's ON track, its label in the switches' ON / OFF lettering.
             mTexturesButton = new BarButton(LINK_TEXTURES, this, theApp, AtlasResourceBase.IMAGE_GROUP1_20, AtlasResourceBase.IMAGE_GROUP1_22);
@@ -175,6 +189,20 @@ namespace Sexy
             int anIndex = System.Math.Max(0, System.Array.IndexOf(Constants.TEXTURE_SIDES, mTextureSide));
             mTexturesButton.mLabel = SexyAppBase.Loc(TEXTURE_NAMES[anIndex]);
             mTexturesButton.SizeToLabel();
+            SetLabel(mLayoutLabel, "UI Layout");
+            // Low quality (the iPhone textures) only has the iPhone layout: shown faded, and a tap does nothing.
+            bool aFixed = LayoutFixed();
+            mLayoutButton.mLabel = SexyAppBase.Loc(LAYOUT_NAMES[aFixed ? Constants.LAYOUT_MODE_IPHONE : Constants.LayoutMode]);
+            mLayoutButton.mAlpha = aFixed ? 0x80 : 0xff;
+            mLayoutButton.SetDisabled(aFixed);
+            mLayoutButton.SizeToLabel();
+        }
+
+        /// <summary>Port: true while the game runs with the Low quality's iPhone textures (loaded at launch, not
+        /// just picked), which always get the iPhone layout.</summary>
+        private bool LayoutFixed()
+        {
+            return Constants.TextureSide == 320 || Constants.TextureSide == 640;
         }
 
         /// <summary>
@@ -279,6 +307,19 @@ namespace Sexy
             SetupSlide(SLIDE_FROM_BOTTOM, 0.5f);
         }
 
+        /// <summary>Port: laid out again for a new layout (AttachToManager), it stays on the page it was showing.</summary>
+        public override void Relayout()
+        {
+            bool anExtra = mExtraPage;
+            int aHintsOnCount = mHintsOnCount;
+            base.Relayout();
+            mHintsOnCount = aHintsOnCount;
+            if (anExtra && !mExtraPage)
+            {
+                ShowPage(true);
+            }
+        }
+
         /// <summary>FUN_000209fc: the sliders under their labels, the switches down the right, their labels beside them.</summary>
         private void LayoutControls()
         {
@@ -326,7 +367,10 @@ namespace Sexy
             mSubmitByDraggingLabel.Layout(0x200800, mSubmitByDraggingSwitch, -aPad, 0, 0, 0);
             mCheckForUpdatesSwitch.Layout(0x2200, mSubmitByDraggingSwitch, 0, aGap, 0, 0);
             mCheckForUpdatesLabel.Layout(0x200800, mCheckForUpdatesSwitch, -aPad, 0, 0, 0);
-            mTexturesButton.Layout(0x2200, mCheckForUpdatesSwitch, 0, aGap, 0, 0);
+            mLayoutButton.Layout(0x2200, mCheckForUpdatesSwitch, 0, aGap, 0, 0);
+            mLayoutLabel.Layout(0x200800, mLayoutButton, -aPad, 0, 0, 0);
+            mLayoutLabel.mJustifyH = 1;
+            mTexturesButton.Layout(0x2200, mLayoutButton, 0, aGap, 0, 0);
             mTexturesLabel.Layout(0x200800, mTexturesButton, -aPad, 0, 0, 0);
             mRestartLabel.Layout(0x2200, mTexturesButton, 0, aGap, 0, 0);
             mLandscapeBooksLabel.mJustifyH = 1;
@@ -351,6 +395,8 @@ namespace Sexy
             mSubmitByDraggingSwitch.SetVisible(mExtraPage);
             mCheckForUpdatesLabel.SetVisible(mExtraPage);
             mCheckForUpdatesSwitch.SetVisible(mExtraPage);
+            mLayoutLabel.SetVisible(mExtraPage);
+            mLayoutButton.SetVisible(mExtraPage);
             mTexturesLabel.SetVisible(mExtraPage);
             mTexturesButton.SetVisible(mExtraPage);
             mRestartLabel.SetVisible(mExtraPage && mTextureSide != Constants.TextureSide);
@@ -473,6 +519,19 @@ namespace Sexy
                 ShowPage(true);
                 return;
             }
+            if (theId == LINK_LAYOUT)
+            {
+                if (LayoutFixed())
+                {
+                    return;
+                }
+                // Auto or iPad (the iPhone layout is only Low quality's); the game takes it at once and keeps it.
+                mApp.PlaySound(Res.SOUND_BUTTON_CLICK);
+                Constants.SaveLayoutMode(Constants.LayoutMode == Constants.LAYOUT_MODE_IPAD ? Constants.LAYOUT_MODE_AUTO : Constants.LAYOUT_MODE_IPAD);
+                SexyAppBase.XnaGame.RequestRelayout();
+                ShowPage(true);
+                return;
+            }
             if (theId != LINK_LANGUAGE)
             {
                 return;
@@ -535,6 +594,9 @@ namespace Sexy
 
         private readonly Image mLabelArt;
 
+        /// <summary>Port: the track's and the label's opacity (0x80 for an option that can't change now).</summary>
+        public int mAlpha = 0xff;
+
         /// <summary>theBar the switch's ON track; theLabelArt its OFF label art (for the lettering's size).</summary>
         public BarButton(int theId, ButtonListener theListener, BookWormApp theApp, Image theBar, Image theLabelArt) : base(theId, theListener, theApp)
         {
@@ -564,10 +626,12 @@ namespace Sexy
                 return;
             }
             bool aPressed = mIsOver && mIsDown && !mDisabled;
-            if (aPressed)
+            Color aTint = aPressed ? PRESSED_COLOR : TEXT_COLOR;
+            aTint.A = (byte)mAlpha;
+            if (aPressed || mAlpha < 0xff)
             {
                 g.SetColorizeImages(true);
-                g.SetColor(PRESSED_COLOR);
+                g.SetColor(aTint);
             }
             // The ends (half the art's height, its rounded caps) scaled with the height; the middle stretched.
             int anEnd = mBar.mHeight / 2;
@@ -578,7 +642,7 @@ namespace Sexy
             g.SetColorizeImages(false);
             if (mFont != null && !string.IsNullOrEmpty(mLabel))
             {
-                Switch.DrawCapText(g, mFont, mLabel.ToUpperInvariant(), mWidth / 2f, mHeight / 2f, CapHeight(), aPressed ? PRESSED_COLOR : TEXT_COLOR);
+                Switch.DrawCapText(g, mFont, mLabel.ToUpperInvariant(), mWidth / 2f, mHeight / 2f, CapHeight(), aTint);
             }
         }
     }

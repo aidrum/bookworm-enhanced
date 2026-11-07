@@ -181,6 +181,7 @@ namespace Sexy
             { "New version: ", "Nueva versión: " },
             { "Download", "Descargar" },
             { "Texture Quality", "Calidad de texturas" },
+            { "UI Layout", "Diseño de interfaz" },
             { "Low", "Baja" },
             { "Medium", "Media" },
             { "High", "Alta" },

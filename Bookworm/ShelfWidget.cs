@@ -322,9 +322,58 @@ namespace Sexy
             }
             int aCelWidth = anImage.GetCelWidth();
             int aCelHeight = anImage.GetCelHeight();
-            g.DrawImage(anImage, theX, theY, new TRect(theIndex * aCelWidth, 0, aCelWidth, aCelHeight * NUMBER_ROWS / LABEL_ROWS));
+            MemoryImage aLabels = GetSpanishLabels(anImage);
+            if (aLabels == null)
+            {
+                // Inside an offscreen render the strip cannot be built: drawn piece by piece.
+                DrawSpanishLabel(g, anImage, theX, theY, theIndex);
+                return;
+            }
+            g.DrawImage(aLabels, theX, theY, new TRect(theIndex * aCelWidth, 0, aCelWidth, aCelHeight));
+        }
+
+        /// <summary>Port (Spanish): a label's number cut from the art, "letras" drawn under it.</summary>
+        private static void DrawSpanishLabel(Graphics g, Image theArt, int theX, int theY, int theIndex)
+        {
+            int aCelWidth = theArt.GetCelWidth();
+            int aCelHeight = theArt.GetCelHeight();
+            g.DrawImage(theArt, theX, theY, new TRect(theIndex * aCelWidth, 0, aCelWidth, aCelHeight * NUMBER_ROWS / LABEL_ROWS));
             GradientText.Draw(g, Res.FONT_ARIAL_MEDIUM_OUTLINED, new[] { "letras" }, theX + aCelWidth / 2, theY + aCelHeight * LETRAS_BASELINE / LABEL_ROWS,
                 LETRAS_TOP, LETRAS_BOTTOM, null, 0, LETRAS_SCALE);
+        }
+
+        /// <summary>Port (performance, Spanish): every label ("3 letras" to "12 letras") drawn once into one strip
+        /// laid out as the art's cels, then each blitted from it; built again for other art (another texture set)
+        /// or when the device lost it.</summary>
+        private static MemoryImage sSpanishLabels;
+
+        private static Image sSpanishLabelsArt;
+
+        private static MemoryImage GetSpanishLabels(Image theArt)
+        {
+            if (sSpanishLabels != null && ReferenceEquals(sSpanishLabelsArt, theArt) && !sSpanishLabels.RenderTarget.IsContentLost)
+            {
+                return sSpanishLabels;
+            }
+            if (Graphics.IsOffscreen)
+            {
+                return null;
+            }
+            sSpanishLabels?.Dispose();
+            int aCels = theArt.mNumCols;
+            MemoryImage aStrip = new MemoryImage();
+            aStrip.Create(theArt.GetCelWidth() * aCels, theArt.GetCelHeight());
+            Graphics g = Graphics.GetNew(aStrip);
+            g.Clear(Color.Transparent);
+            for (int i = 0; i < aCels; i++)
+            {
+                DrawSpanishLabel(g, theArt, i * theArt.GetCelWidth(), 0, i);
+            }
+            g.SetRenderTarget(null);
+            g.PrepareForReuse();
+            sSpanishLabels = aStrip;
+            sSpanishLabelsArt = theArt;
+            return aStrip;
         }
 
         /// <summary>0x3a044.</summary>

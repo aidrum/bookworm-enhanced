@@ -110,7 +110,10 @@ namespace Sexy
             }
             int anExtra = theHeight - aLayoutHeight;
             // The extra height at 16:9, past which BOARD_ANCHORED words stop following their slope.
-            int aWideExtra = (int)System.Math.Round(theWidth * 16.0 / 9.0) - aLayoutHeight;
+            // The iPad design's base is its own 3:4 layout, where Lex already sits on the board: the iPhone slopes
+            // (960 to 1136) would leave him lagging behind the board as it moves down, so taller than 3:4 these
+            // follow the board 1:1 from the start.
+            int aWideExtra = mIPadDesign ? 0 : (int)System.Math.Round(theWidth * 16.0 / 9.0) - aLayoutHeight;
             for (int i = 0; i < SIZE; i++)
             {
                 int aShort = LAYOUT_IPHONE_RETINA[i];

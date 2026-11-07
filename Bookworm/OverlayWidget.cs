@@ -132,6 +132,11 @@ namespace Sexy
 
         private const int BANNER_PLAQUE_TOP = 114;
 
+        /// <summary>Port: Low quality's banner art (70 high), where its plaque starts (not exactly scaled).</summary>
+        private const int BANNER_LOW_ART_HEIGHT = 70;
+
+        private const int BANNER_LOW_PLAQUE_TOP = 30;
+
         private const int BANNER_FIRST_BASELINE = 58;
 
         private const int BANNER_LINE_PITCH = 54;
@@ -149,7 +154,9 @@ namespace Sexy
         {
             Image anImage = AtlasResourceBase.IMAGE_GROUP4_06;
             float aUnit = anImage.mHeight / (float)BANNER_ART_HEIGHT;
-            int aCut = (int)System.Math.Round(BANNER_PLAQUE_TOP * aUnit);
+            // Low's 70-high art is not the big art scaled exactly: its row 29 still has the title in the shadow, the
+            // plaque starts at 30 (atlas y 220). Medium (57) and High (114) are where the scale puts them.
+            int aCut = anImage.mHeight == BANNER_LOW_ART_HEIGHT ? BANNER_LOW_PLAQUE_TOP : (int)System.Math.Round(BANNER_PLAQUE_TOP * aUnit);
             g.DrawImage(anImage, new TRect(mBannerX, mBannerY + aCut, anImage.mWidth, anImage.mHeight - aCut),
                 new TRect(0, aCut, anImage.mWidth, anImage.mHeight - aCut));
             Font aFont = Res.FONT_COOPER_OUTLINED;

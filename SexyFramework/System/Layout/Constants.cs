@@ -151,6 +151,59 @@ namespace Sexy
             }
         }
 
+        /// <summary>Port: the UI layout picked in the options: by the screen's shape, or always one design.</summary>
+        public const int LAYOUT_MODE_AUTO = 0;
+
+        public const int LAYOUT_MODE_IPHONE = 1;
+
+        public const int LAYOUT_MODE_IPAD = 2;
+
+        /// <summary>Port: the UI layout in use (LAYOUT_MODE_*), kept in <see cref="LayoutModeFileName"/>. The iPhone
+        /// texture sets (Low) always get the iPhone design.</summary>
+        public static int LayoutMode = LAYOUT_MODE_AUTO;
+
+        private const string LayoutModeFileName = "layout.txt";
+
+        private static string LayoutModePath => string.IsNullOrEmpty(StorageDir) ? null : System.IO.Path.Combine(StorageDir, LayoutModeFileName);
+
+        /// <summary>Port: reads the kept UI layout into <see cref="LayoutMode"/> (Auto when none is kept, or for
+        /// anything but iPad: the options only offer Auto and iPad).</summary>
+        public static void LoadLayoutMode()
+        {
+            LayoutMode = LAYOUT_MODE_AUTO;
+            try
+            {
+                string aPath = LayoutModePath;
+                if (aPath != null && System.IO.File.Exists(aPath) &&
+                    int.TryParse(System.IO.File.ReadAllText(aPath).Trim(), out int aMode) &&
+                    aMode == LAYOUT_MODE_IPAD)
+                {
+                    LayoutMode = aMode;
+                }
+            }
+            catch (System.Exception)
+            {
+            }
+        }
+
+        /// <summary>Port: uses and keeps a UI layout; the game takes it at once (Main.RequestRelayout).</summary>
+        public static void SaveLayoutMode(int theMode)
+        {
+            LayoutMode = theMode;
+            try
+            {
+                string aPath = LayoutModePath;
+                if (aPath != null)
+                {
+                    System.IO.Directory.CreateDirectory(StorageDir);
+                    System.IO.File.WriteAllText(aPath, theMode.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+            }
+            catch (System.Exception)
+            {
+            }
+        }
+
         /// <summary>Port: loads the kept texture set, or keeps the one just picked (the first launch).</summary>
         private static void ApplySavedTextures(int theScreenWidth, int theScreenHeight)
         {
@@ -166,6 +219,7 @@ namespace Sexy
 
         private static void ChooseLayoutCore(int theScreenWidth, int theScreenHeight)
         {
+            LoadLayoutMode();
             BackBufferSize = PickLayout(theScreenWidth, theScreenHeight);
             string aForced = System.Environment.GetEnvironmentVariable("SEXY_LAYOUT");
             LayoutForced = !string.IsNullOrEmpty(aForced);
@@ -211,9 +265,19 @@ namespace Sexy
         /// </summary>
         public const double HIGHER_RES_THRESHOLD = 1.05;
 
-        /// <summary>Port: screens below this aspect (height / width) get the iPad design, taller ones the
-        /// iPhone design (between 16:10 tablets and 16:9 phones).</summary>
-        public const double IPAD_FAMILY_MAX_ASPECT = 1.64;
+        /// <summary>Port: screens at this aspect (height / width) or taller get the iPhone design (the iPhone 4's
+        /// 2:3 and up), squarer ones the iPad design (3:4 up to just under 2:3).</summary>
+        public const double IPAD_FAMILY_MAX_ASPECT = 1.5;
+
+        /// <summary>Port: how many screen pixels short of an aspect boundary (2:3, 3:4) a screen may be and still
+        /// count as that shape, for devices a little off the original screens' exact sizes.</summary>
+        public const int ASPECT_SNAP_PIXELS = 5;
+
+        /// <summary>Port: true when theLong is at least theAspect times theShort, give or take ASPECT_SNAP_PIXELS.</summary>
+        private static bool AtLeastAspect(int theLong, int theShort, double theAspect)
+        {
+            return theLong + ASPECT_SNAP_PIXELS >= theShort * theAspect;
+        }
 
         /// <summary>Port: the iPad's 4:3; wider screens get a wider layout of the iPad design's height (pillarboxed
         /// while the interface is turned to landscape).</summary>
@@ -250,14 +314,25 @@ namespace Sexy
         /// </summary>
         public static Point LayoutFor(int theTextureSide, int theScreenWidth, int theScreenHeight)
         {
-            double anAspect = theScreenWidth > 0 && theScreenHeight > 0 ? (double)theScreenHeight / theScreenWidth : MIN_ASPECT;
-            if (Landscape && theScreenWidth > 0 && theScreenHeight > 0)
+            bool aSized = theScreenWidth > 0 && theScreenHeight > 0;
+            double anAspect = aSized ? (double)theScreenHeight / theScreenWidth : MIN_ASPECT;
+            // The layout's long and short sides (portrait; turned back in landscape).
+            int aLong = theScreenHeight;
+            int aShort = theScreenWidth;
+            if (Landscape && aSized)
+            {
+                aLong = System.Math.Max(theScreenWidth, theScreenHeight);
+                aShort = System.Math.Min(theScreenWidth, theScreenHeight);
+            }
+            bool anIPhoneShape = LayoutMode == LAYOUT_MODE_IPHONE ||
+                (LayoutMode == LAYOUT_MODE_AUTO && aSized && AtLeastAspect(aLong, aShort, IPAD_FAMILY_MAX_ASPECT));
+            if (Landscape && aSized)
             {
                 // Turned to landscape (the bookshelf): the layout stays portrait, so its shape is the screen's
                 // turned back. A phone keeps the iPhone design at its own 16:9 (or longer) instead of falling
                 // to the pillarboxed iPad 4:3; the iPad family stays at 4:3 as before.
-                anAspect = (double)System.Math.Max(theScreenWidth, theScreenHeight) / System.Math.Min(theScreenWidth, theScreenHeight);
-                if (theTextureSide != LAYOUT_IPHONE.X && theTextureSide != LAYOUT_IPHONE_RETINA.X && anAspect < IPAD_FAMILY_MAX_ASPECT)
+                anAspect = (double)aLong / aShort;
+                if (theTextureSide != LAYOUT_IPHONE.X && theTextureSide != LAYOUT_IPHONE_RETINA.X && !anIPhoneShape)
                 {
                     anAspect = MIN_ASPECT;
                 }
@@ -268,13 +343,13 @@ namespace Sexy
                 aWidth = theTextureSide;
                 anAspect = System.Math.Max(IPHONE_MIN_ASPECT, anAspect);
             }
-            else if (anAspect < MIN_ASPECT && !Landscape)
+            else if (!anIPhoneShape && aSized && !Landscape && !AtLeastAspect(aLong, aShort, MIN_ASPECT))
             {
                 // Wider than 3:4: the iPad design keeps its 4:3 height and grows wider (ScreenPos centres it).
                 int aHeight = theTextureSide * 4 / 3;
                 return new Point((int)System.Math.Round(aHeight / anAspect), aHeight);
             }
-            else if (anAspect < IPAD_FAMILY_MAX_ASPECT)
+            else if (!anIPhoneShape)
             {
                 aWidth = theTextureSide;
                 anAspect = System.Math.Max(MIN_ASPECT, anAspect);
@@ -282,6 +357,7 @@ namespace Sexy
             else
             {
                 aWidth = theTextureSide / LAYOUT_IPAD.X * LAYOUT_IPHONE_RETINA.X;
+                anAspect = System.Math.Max(IPHONE_MIN_ASPECT, anAspect);
             }
             return new Point(aWidth, (int)System.Math.Round(aWidth * anAspect));
         }

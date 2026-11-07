@@ -502,6 +502,21 @@ namespace Sexy
             return ApplyPendingLayoutNow(theApp);
         }
 
+        /// <summary>
+        /// Port: the game is laid out again for the window as it is (the UI layout option changed), on the next
+        /// update rather than inside the click that asked for it; it may wait as a resize does (UpdateLayout).
+        /// </summary>
+        public void RequestRelayout()
+        {
+            Rectangle aBounds = WindowBounds();
+            if (aBounds.Width <= 0 || aBounds.Height <= 0)
+            {
+                return;
+            }
+            mPendingLayout = Constants.RelayoutFor(aBounds.Width, aBounds.Height);
+            mPendingLayoutAge = LAYOUT_SETTLE_UPDATES - 1;
+        }
+
         /// <summary>Port: as RelayoutNow, with the layout the window asked for last.</summary>
         public bool ApplyPendingLayoutNow(SexyAppBase theApp)
         {
