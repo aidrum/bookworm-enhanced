@@ -78,13 +78,15 @@ namespace Sexy
             }
             mHintShowing = true;
             ActionSheet aSheet = new ActionSheet(DIALOG_SCRAMBLE, this, mApp);
-            FancyTextWidget aMessage = aSheet.GetMessage();
-            aMessage.SetFont(Res.FONT_ARIAL_MEDIUM_OUTLINED);
-            aMessage.SetColor(Color.White);
-            aMessage.SetJustify(0);
-            aMessage.AddText(SexyAppBase.Loc("Scrambling the board will add fire tiles and remove your bonus tiles."), 0);
-            aMessage.NewLine(0);
-            aMessage.Fit(0);
+            aSheet.SetMessage(aMessage =>
+            {
+                aMessage.SetFont(Res.FONT_ARIAL_MEDIUM_OUTLINED);
+                aMessage.SetColor(Color.White);
+                aMessage.SetJustify(0);
+                aMessage.AddText(SexyAppBase.Loc("Scrambling the board will add fire tiles and remove your bonus tiles."), 0);
+                aMessage.NewLine(0);
+                aMessage.Fit(0);
+            });
             aSheet.SetRedButton(BUTTON_SCRAMBLE, SexyAppBase.Loc("Scramble"));
             aSheet.SetGreenButton(BUTTON_CANCEL, SexyAppBase.Loc("Cancel"));
             aSheet.Show();

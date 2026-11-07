@@ -149,8 +149,8 @@ namespace Sexy
                 // the centred shelf (0x100) is from the left; the 960 layout had no room for it (0).
                 mData[0x130 / 4] = theHeight - mData[0x100 / 4];
             }
-            // Port (wide screens): the design stays in the middle, the game selector's books go to the right edge
-            // and Lex at the menu stays at the left (his menu and off-screen places and his speech are not moved).
+            // Port (wide screens): the design stays in the middle (Lex at the menu and his pedestal too) and the game
+            // selector's books go to the right edge; Lex still comes in from off the screen's left edge (0x88).
             mDesignWidth = mIPadDesign && !Constants.Landscape ? 0x300 * aScale : theWidth;
             mRightX = System.Math.Max(0, theWidth - mDesignWidth);
             mCenterX = mRightX / 2;
@@ -172,6 +172,7 @@ namespace Sexy
             // Port: how far below Lex's mouth the board's top row is in the portrait game layout (FlyingPieceList).
             mLexMouthGap = At(0x2d4) + At(0x17c) - At(0x94) - At(0x184);
             mWideGame = mIPadDesign && !Constants.Landscape && (long)theWidth * 3 >= (long)theHeight * 4;
+            mWideLexScale = 1f;
             if (mWideGame)
             {
                 LayOutWideGame(aScale, theWidth, theHeight);
@@ -265,13 +266,8 @@ namespace Sexy
             int aBoardWidth = (int)System.Math.Round(mWideBoardWidth * mWideBoardScale);
             int aBoardHeight = (int)System.Math.Round(mWideBoardHeight * mWideBoardScale);
             int aBoardX = aBlockX + aBlockWidth - aBoardWidth;
-            // The bar's screen place (it keeps its height at the bottom of the screen) and Lex's and his balloons'
-            // places relative to each other, before the board moves.
+            // The bar's screen place (it keeps its height at the bottom of the screen), before the board moves.
             int aBoardY = mData[0x2d4 / 4];
-            int aBalloonDX = mData[0x230 / 4] - mData[0x90 / 4];
-            int aBalloonDY = mData[0x234 / 4] - mData[0x94 / 4];
-            int aBigBalloonDX = mData[0x260 / 4] - mData[0x90 / 4];
-            int aBigBalloonDY = mData[0x264 / 4] - mData[0x94 / 4];
             // The board, centred vertically at the block's right.
             int aNewBoardY = ((theHeight - aBoardHeight) / 2) - 55;
             mData[0x2d0 / 4] = aBoardX;
@@ -301,20 +297,50 @@ namespace Sexy
             // The level-up page and the in-game word collection page go over the board.
             mData[0x220 / 4] = aBoardX + (aBoardWidth - mData[0x228 / 4]) / 2;
             mData[0x2e0 / 4] = aBoardX + (aBoardWidth - mData[0x2e8 / 4]) / 2;
-            // Lex at the panel's left, standing behind the bar's frame as he stands behind the board's top, with his
-            // balloons to his right as in portrait.
+            // Lex bigger than in portrait (as on the PC), as big as fits the panel between the 4:3 block's left edge
+            // and the board, centred in it, standing behind the bar's frame as he stands behind the board's top (the
+            // same share of him hidden, scaled).
             int aFrameTop = aNewBoardY + mData[0x15c / 4];
-            mWideLex = new TPoint(aBlockX + 0x30 * theScale, aFrameTop - 0xe4 * theScale);
+            int aPanelWidth = aBoardX - aBlockX;
+            mWideLexScale = System.Math.Min(WIDE_LEX_SCALE, (aPanelWidth - 0x10 * theScale) / (float)(0x80 * theScale));
+            mWideLexScale = System.Math.Max(1f, mWideLexScale);
+            int aLexWidth = (int)System.Math.Round(0x80 * theScale * mWideLexScale);
+            mWideLex = new TPoint(aBlockX + (aPanelWidth - aLexWidth) / 2, aFrameTop - (int)System.Math.Round(0xe4 * theScale * mWideLexScale));
             mWideLexEntry = new TPoint(mWideLex.mX + mData[0x98 / 4] - mData[0x90 / 4], mWideLex.mY + mData[0x9c / 4] - mData[0x94 / 4]);
-            // The bonus word banner hangs at the top of the panel, straight above Lex (its width, 0xa0, is Lex's 0x80
-            // plus 0x20).
-            int aBannerX = mWideLex.mX - 0x10 * theScale;
+            int aLexCenterX = mWideLex.mX + aLexWidth / 2;
+            // The bonus word banner hangs at the top of the panel, centred above Lex (0xa0 wide), kept off the board.
+            int aBannerX = System.Math.Min(aLexCenterX - 0x50 * theScale, aBoardX - 0xa0 * theScale);
             mData[0x190 / 4] = aBannerX;
             mData[0x198 / 4] = aBannerX;
-            mData[0x230 / 4] = mWideLex.mX + aBalloonDX;
-            mData[0x234 / 4] = mWideLex.mY + aBalloonDY;
-            mData[0x260 / 4] = mWideLex.mX + aBigBalloonDX;
-            mData[0x264 / 4] = mWideLex.mY + aBigBalloonDY;
+            // His word balloon (0x230) and definition balloon (0x260) above his head (WordBalloon draws them with
+            // the wide art, AtlasResourceBase.IMAGE_WIDE_SPEECH_BUBBLE, its tail in the middle of its bottom).
+            PlaceBalloonAboveLex(0x260, theScale, aLexCenterX, theWidth);
+            PlaceBalloonAboveLex(0x230, theScale, aLexCenterX, theWidth);
+        }
+
+        /// <summary>
+        /// Port (mWideGame): how much bigger Lex is drawn at his place beside the board (at most: less where the
+        /// panel is narrower); Lex.GetDrawScale. His mouth (0x180, 0x184 into him) scales with him.
+        /// </summary>
+        public const float WIDE_LEX_SCALE = 1.5f;
+
+        public float mWideLexScale = 1f;
+
+        /// <summary>
+        /// Port (mWideGame): a balloon's place (theOffset: 0x230 or 0x260; their size words stay the portrait ones,
+        /// which their text is laid out by): the wide art (iPad points: 374 x 192, the tail's tip 196 in and 177
+        /// down), as much wider as the portrait balloon is wider than the word balloon's art (0x238; the stretch is
+        /// split around the tail, WordBalloon.DrawWideBalloon), with the tip over Lex's middle, just above his head
+        /// (his art's head starts 0x28 down, scaled with him), kept on the screen.
+        /// </summary>
+        private void PlaceBalloonAboveLex(int theOffset, int theScale, int theCenterX, int theScreenWidth)
+        {
+            int anExtra = System.Math.Max(0, mData[theOffset / 4 + 2] - mData[0x238 / 4]);
+            int aWidth = 374 * theScale + anExtra;
+            int aHeadTop = mWideLex.mY + (int)System.Math.Round(0x28 * theScale * mWideLexScale);
+            int aX = theCenterX - 196 * theScale - anExtra / 2;
+            mData[theOffset / 4] = System.Math.Max(0, System.Math.Min(aX, theScreenWidth - aWidth));
+            mData[theOffset / 4 + 1] = aHeadTop - (177 + 2) * theScale;
         }
 
         /// <summary>Port (mWideGame): the bottom bar's board-relative x words (0x148 menu button, 0x150 level bar,
@@ -324,15 +350,16 @@ namespace Sexy
         /// <summary>
         /// Port: x words (byte offsets) of screen places that keep to the middle of a wide layout: the logo (0x00),
         /// the menu tabs (0x40 ... 0x60, in the tab bar, which spans the screen), Lex on the board and entering it
-        /// (0x90, 0x98), the books, dialogs and help pages (0x1e0, 0x1f0, 0x200, 0x220, 0x2e0), the board (0x2d0)
-        /// and the board's balloons (0x230, 0x240, 0x260, 0x270), plus the bonus word banner's slide (0x190, 0x198,
-        /// in the board's full-screen overlay). The full-width images (swags, pedestal: 0x78) are centred by
+        /// (0x90, 0x98), Lex at the menu, his pedestal and his speech bubble (0x80, 0x78, 0x250), the books, dialogs and help
+        /// pages (0x1e0, 0x1f0, 0x200, 0x220, 0x2e0), the board (0x2d0) and the board's balloons (0x230, 0x240,
+        /// 0x260, 0x270), plus the bonus word banner's slide (0x190, 0x198,
+        /// in the board's full-screen overlay). The full-width images (swags) are centred by
         /// SlideInImage; places inside the board or a screen are relative to it and stay.
         /// </summary>
         private static readonly int[] CENTRED_X =
         {
-            0x00, 0x40, 0x48, 0x50, 0x58, 0x60, 0x90, 0x98, 0x190, 0x198,
-            0x1e0, 0x1f0, 0x200, 0x220, 0x2d0, 0x2e0, 0x230, 0x240, 0x260, 0x270
+            0x00, 0x40, 0x48, 0x50, 0x58, 0x60, 0x78, 0x80, 0x90, 0x98, 0x190, 0x198,
+            0x1e0, 0x1f0, 0x200, 0x220, 0x2d0, 0x2e0, 0x230, 0x240, 0x250, 0x260, 0x270
         };
 
         /// <summary>Port: x words that keep to the right edge of a wide layout: the game selector (0x08).</summary>

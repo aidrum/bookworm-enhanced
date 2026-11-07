@@ -15,6 +15,14 @@ namespace Sexy
             1, 4, 4, 3, 1, 5, 3, 5, 1, 8, 7, 2, 4, 2, 1, 4, 7, 2, 1, 2, 2, 5, 6, 8, 6, 10
         };
 
+        /// <summary>A letter's value in the current language (port: Spanish takes the PC Spanish version's).</summary>
+        public static int GetLetterValue(char theLetter)
+        {
+            int[] aLetterValues = Localization.IsSpanish ? Localization.SPANISH_LETTER_VALUES : LETTER_VALUES;
+            int i = theLetter - 'A';
+            return i >= 0 && i < 26 ? aLetterValues[i] : 0;
+        }
+
         /// <summary>Scoring mode 0's base by length (0xccba0); the game uses mode 1 (app + 0x11d8).</summary>
         private static readonly int[] LENGTH_SCORES = { 0, 0, 0, 50, 100, 200, 400, 600, 1000 };
 
@@ -99,12 +107,9 @@ namespace Sexy
                 return 0;
             }
             int aValues = 1;
-            // Port: Spanish takes the PC Spanish version's letter values.
-            int[] aLetterValues = Localization.IsSpanish ? Localization.SPANISH_LETTER_VALUES : LETTER_VALUES;
             foreach (char c in mWord)
             {
-                int i = c - 'A';
-                aValues += i >= 0 && i < 26 ? aLetterValues[i] : 0;
+                aValues += GetLetterValue(c);
             }
             int aMultiplier = aLength + mTypeCounts[1] * 2 + mTypeCounts[2] * 4 + mTypeCounts[4] * 7 + mTypeCounts[5] * 10;
             if (mTypeCounts[3] == mTileCount)

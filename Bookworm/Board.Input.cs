@@ -273,6 +273,13 @@ namespace Sexy
                 {
                     mTouchMode = 1;
                 }
+                else if (mTouchMode == 2 && mApp.mSubmitByDragging && mSelection.Count > 0 && mWordScore.mValid)
+                {
+                    // Port (Submit by Dragging): a touch that dragged (from any tile of the word, or a new one)
+                    // submits the word when let go if it is valid; a tap never does.
+                    Piece aLast = mSelection[mSelection.Count - 1];
+                    SubmitWord((int)(aLast.mX + mTileWidth / 2), (int)(aLast.mY + mTileHeight / 2));
+                }
             }
             MarkDirty();
         }

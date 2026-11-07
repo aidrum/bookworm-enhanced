@@ -25,8 +25,15 @@ namespace Sexy
         {
             "mUpdated", "mClockStart", "mPauseFlags", "mTileWidth", "mTileHeight", "mCols", "mRows",
             "mLastHitFrame", "mTouchMode", "mHintShowing", "mPiecesMoving", "mSubmitWaitCount", "mSubmitArrow",
-            "mSubmitArrowX", "mSubmitArrowY", "mSubmitArrowAlpha"
+            "mSubmitArrowX", "mSubmitArrowY", "mSubmitArrowAlpha", "mLanguage"
         };
+
+        /// <summary>
+        /// Port: the language the game was started in (BookWormApp.StartGame), whose saved game it is
+        /// (BookWormApp.GetSavedGamePath). Kept after the language changes, so a game left at the menu is saved
+        /// (on quitting or going to the background) into its own language's file, not the new one's.
+        /// </summary>
+        public int mLanguage;
 
         private const byte FIELD_INT = 0;
         private const byte FIELD_DOUBLE = 1;
@@ -62,7 +69,7 @@ namespace Sexy
             }
             try
             {
-                using (BinaryWriter aWriter = new BinaryWriter(File.Create(mApp.GetSavedGamePath(theMode))))
+                using (BinaryWriter aWriter = new BinaryWriter(File.Create(mApp.GetSavedGamePath(theMode, mLanguage))))
                 {
                     aWriter.Write(SAVE_VERSION);
                     for (int i = 0; i < mRand.mt.Length; i++)
@@ -116,7 +123,7 @@ namespace Sexy
             }
             try
             {
-                using (BinaryReader aReader = new BinaryReader(File.OpenRead(mApp.GetSavedGamePath(theMode))))
+                using (BinaryReader aReader = new BinaryReader(File.OpenRead(mApp.GetSavedGamePath(theMode, mLanguage))))
                 {
                     if (aReader.ReadInt32() > SAVE_VERSION)
                     {

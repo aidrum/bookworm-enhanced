@@ -156,7 +156,7 @@ namespace Sexy
         /// IMAGE_GROUP13_03 (0x128) and IMAGE_GROUP13_04 (0x130); on iPhone 5 (long side 1136) IMAGE_GROUP13_02
         /// (0x128) and IMAGE_GROUP13_01 (0x130). Port: any iPhone-family screen wider than 960 gets the latter.
         /// </summary>
-        /// <summary>Port (Spanish): the history banner without its English title (images/title_blank*), loaded once.</summary>
+        /// <summary>Port (Spanish): the history banner without its English title (AtlasResourceBase localized art).</summary>
         private Image mBlankHistoryBanner;
 
         private bool mBlankHistoryBannerLoaded;
@@ -175,7 +175,7 @@ namespace Sexy
             }
             if (!mBlankHistoryBannerLoaded)
             {
-                mBlankHistoryBanner = GradientText.LoadScaled(mApp, "images/title_blank", anImage.mWidth / 320);
+                mBlankHistoryBanner = AtlasResourceBase.GetLocalizedImage(mApp, anImage.mWidth / 320, AtlasResourceBase.LOCALIZED_BLANK_BANNER);
                 mBlankHistoryBannerLoaded = true;
             }
             g.DrawImage(mBlankHistoryBanner ?? anImage, mShelfEndPos.mX, mShelfEndPos.mY);

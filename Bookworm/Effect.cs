@@ -226,8 +226,9 @@ namespace Sexy
             }
             // Port: also once the first tile is as close to his mouth as the top row is in portrait (ScreenPos
             // mLexMouthGap): in the wide game layout he stands beside the board, his mouth below its top row.
-            double aMouthDX = mPieces[0].mX - (aPos.At(0x180) + aLex.mX - aTileW / 2);
-            double aMouthDY = mPieces[0].mY - (aPos.At(0x184) + aLex.mY);
+            TPoint aMouth = aLex.GetMouth();
+            double aMouthDX = mPieces[0].mX - (aMouth.mX - aTileW / 2);
+            double aMouthDY = mPieces[0].mY - aMouth.mY;
             bool aNearMouth = aMouthDX * aMouthDX + aMouthDY * aMouthDY < (double)aPos.mLexMouthGap * aPos.mLexMouthGap;
             if ((mPieces[0].mY < aBoard.ToShown(aPos.At(0x17c)) + aBoard.mY || aNearMouth) && aLex.IsIdleOrSparkling())
             {
@@ -241,8 +242,8 @@ namespace Sexy
                 int aBaseY;
                 if (aPrev == null)
                 {
-                    aBaseX = aPos.At(0x180) + aLex.mX - aTileW / 2;
-                    aBaseY = aPos.At(0x184) + aLex.mY - aTileW / 2;
+                    aBaseX = aMouth.mX - aTileW / 2;
+                    aBaseY = aMouth.mY - aTileW / 2;
                 }
                 else
                 {

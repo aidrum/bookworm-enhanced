@@ -25,6 +25,12 @@ namespace Sexy
         /// </summary>
         protected static void UnpackImages(Image theAtlas, int[,] theTable)
         {
+            UnpackImages(theAtlas, theTable, mImages);
+        }
+
+        /// <summary>Port: UnpackImages into theImages (by the table's first column).</summary>
+        private static void UnpackImages(Image theAtlas, int[,] theTable, Image[] theImages)
+        {
             // Port: the sheets leave 1px (iPad Retina: sometimes none) between entries, so a scaled draw filtered
             // the gap or the neighbour into an entry's edge: 1px seams. The sheet is repacked with a 1px border
             // around each entry copied from its own edge (the sheet itself is never drawn whole).
@@ -55,8 +61,77 @@ namespace Sexy
                     anImage.mAnimInfo.Compute(System.Math.Max(anImage.mNumRows, anImage.mNumCols), theTable[i, 9], theTable[i, 10]);
                 }
                 mAllImages.Add(anImage);
-                mImages[theTable[i, 0]] = anImage;
+                theImages[theTable[i, 0]] = anImage;
             }
+        }
+
+        /// <summary>
+        /// Port (wide screens, iPad textures only): the wide layout's own art, from Res.IMAGE_WIDE (wideiPadR; wideR
+        /// at half size): the whole menu pedestal (its atlas image is cut off at the left) and Lex's word balloon
+        /// with its tail in the middle of its bottom (he stands under it). Null without the sheet.
+        /// </summary>
+        public static Image IMAGE_WIDE_LEX_PLATFORM => mWideImages[0];
+
+        public static Image IMAGE_WIDE_SPEECH_BUBBLE => mWideImages[1];
+
+        private static readonly Image[] mWideImages = new Image[2];
+
+        /// <summary>
+        /// Port (translations): the art made for the other languages, one sheet per art scale (images/localized.png
+        /// at the iPhone's, localizedR at 2x, localizediPadR at 4x; GradientText.LoadScaled): the banners' frame
+        /// without its English title (the Word History and More Games banners), and the Continue ribbon with
+        /// "Juego Guardado" (IMAGE_GROUP11_16's Spanish). Loaded on first use, once per scale; null without it.
+        /// </summary>
+        public const int LOCALIZED_BLANK_BANNER = 0;
+
+        public const int LOCALIZED_SAVED_GAME_ES = 1;
+
+        private static readonly System.Collections.Generic.Dictionary<int, Image[]> mLocalizedImages =
+            new System.Collections.Generic.Dictionary<int, Image[]>();
+
+        /// <summary>Each scale's sheet: the blank banner, then the ribbon right of it (1 pixel apart).</summary>
+        private static int[,] LocalizedTable(int theScale)
+        {
+            switch (theScale)
+            {
+            case 4:
+                return new int[,] { { 0, 0, 0, 1280, 236, 1, 1, 0, 0, 0, 0 }, { 1, 1281, 0, 188, 324, 1, 1, 0, 0, 0, 0 } };
+            case 2:
+                return new int[,] { { 0, 0, 0, 640, 118, 1, 1, 0, 0, 0, 0 }, { 1, 641, 0, 94, 162, 1, 1, 0, 0, 0, 0 } };
+            default:
+                return new int[,] { { 0, 0, 0, 320, 62, 1, 1, 0, 0, 0, 0 }, { 1, 321, 0, 47, 81, 1, 1, 0, 0, 0, 0 } };
+            }
+        }
+
+        /// <summary>Port: theIndex (LOCALIZED_*) of the localized sheet for theScale (1, 2 or 4; others round down).</summary>
+        public static Image GetLocalizedImage(SexyAppBase theApp, int theScale, int theIndex)
+        {
+            int aScale = theScale >= 4 ? 4 : theScale >= 2 ? 2 : 1;
+            if (!mLocalizedImages.TryGetValue(aScale, out Image[] anImages))
+            {
+                anImages = new Image[2];
+                Image aSheet = GradientText.LoadScaled(theApp, "images/localized", aScale);
+                if (aSheet != null)
+                {
+                    UnpackImages(aSheet, LocalizedTable(aScale), anImages);
+                }
+                mLocalizedImages[aScale] = anImages;
+            }
+            return anImages[theIndex];
+        }
+
+        /// <summary>Port: cuts Res.IMAGE_WIDE (its iPad Retina places, halved for the iPad's sheet).</summary>
+        public static void UnpackWideImages()
+        {
+            Image aSheet = Res.IMAGE_WIDE;
+            if (aSheet == null)
+            {
+                return;
+            }
+            int[,] aTable = aSheet.mWidth >= 1115
+                ? new int[,] { { 0, 0, 0, 366, 270, 1, 1, 0, 0, 0, 0 }, { 1, 367, 0, 748, 384, 1, 1, 0, 0, 0, 0 } }
+                : new int[,] { { 0, 0, 0, 183, 135, 1, 1, 0, 0, 0, 0 }, { 1, 184, 0, 374, 192, 1, 1, 0, 0, 0, 0 } };
+            UnpackImages(aSheet, aTable, mWideImages);
         }
 
         /// <summary>The cutter for a screen's short side, as the loading thread picks it.</summary>

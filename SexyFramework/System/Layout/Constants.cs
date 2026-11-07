@@ -93,6 +93,79 @@ namespace Sexy
         /// </summary>
         public static void ChooseLayout(int theScreenWidth, int theScreenHeight)
         {
+            ChooseLayoutCore(theScreenWidth, theScreenHeight);
+            if (!LayoutForced)
+            {
+                ApplySavedTextures(theScreenWidth, theScreenHeight);
+            }
+        }
+
+        /// <summary>
+        /// Port: the texture set chosen in the options (Low 320 iPhone, Medium 768 iPad, High 1536 iPad Retina),
+        /// kept in <see cref="TexturesFileName"/> in <see cref="StorageDir"/>. The first launch keeps the set
+        /// picked for the screen; later launches load the kept one, which the options can change (from the next
+        /// launch: the textures are loaded once).
+        /// </summary>
+        public static string StorageDir;
+
+        private const string TexturesFileName = "textures.txt";
+
+        /// <summary>Port: the texture sets the options offer, Low to High.</summary>
+        public static readonly int[] TEXTURE_SIDES = { LAYOUT_IPHONE.X, LAYOUT_IPAD.X, LAYOUT_IPAD_RETINA.X };
+
+        private static string TexturesPath => string.IsNullOrEmpty(StorageDir) ? null : System.IO.Path.Combine(StorageDir, TexturesFileName);
+
+        /// <summary>Port: the kept texture set, or 0 when none is kept (or it cannot be read).</summary>
+        public static int ReadSavedTextureSide()
+        {
+            try
+            {
+                string aPath = TexturesPath;
+                if (aPath != null && System.IO.File.Exists(aPath) &&
+                    int.TryParse(System.IO.File.ReadAllText(aPath).Trim(), out int aSide) &&
+                    System.Array.IndexOf(TEXTURE_SIDES, aSide) >= 0)
+                {
+                    return aSide;
+                }
+            }
+            catch (System.Exception)
+            {
+            }
+            return 0;
+        }
+
+        /// <summary>Port: keeps a texture set for the next launches.</summary>
+        public static void SaveTextureSide(int theSide)
+        {
+            try
+            {
+                string aPath = TexturesPath;
+                if (aPath != null)
+                {
+                    System.IO.Directory.CreateDirectory(StorageDir);
+                    System.IO.File.WriteAllText(aPath, theSide.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+            }
+            catch (System.Exception)
+            {
+            }
+        }
+
+        /// <summary>Port: loads the kept texture set, or keeps the one just picked (the first launch).</summary>
+        private static void ApplySavedTextures(int theScreenWidth, int theScreenHeight)
+        {
+            int aSaved = ReadSavedTextureSide();
+            if (aSaved == 0)
+            {
+                SaveTextureSide(TextureSide);
+                return;
+            }
+            TextureSide = aSaved;
+            BackBufferSize = LayoutFor(TextureSide, theScreenWidth, theScreenHeight);
+        }
+
+        private static void ChooseLayoutCore(int theScreenWidth, int theScreenHeight)
+        {
             BackBufferSize = PickLayout(theScreenWidth, theScreenHeight);
             string aForced = System.Environment.GetEnvironmentVariable("SEXY_LAYOUT");
             LayoutForced = !string.IsNullOrEmpty(aForced);
@@ -178,6 +251,17 @@ namespace Sexy
         public static Point LayoutFor(int theTextureSide, int theScreenWidth, int theScreenHeight)
         {
             double anAspect = theScreenWidth > 0 && theScreenHeight > 0 ? (double)theScreenHeight / theScreenWidth : MIN_ASPECT;
+            if (Landscape && theScreenWidth > 0 && theScreenHeight > 0)
+            {
+                // Turned to landscape (the bookshelf): the layout stays portrait, so its shape is the screen's
+                // turned back. A phone keeps the iPhone design at its own 16:9 (or longer) instead of falling
+                // to the pillarboxed iPad 4:3; the iPad family stays at 4:3 as before.
+                anAspect = (double)System.Math.Max(theScreenWidth, theScreenHeight) / System.Math.Min(theScreenWidth, theScreenHeight);
+                if (theTextureSide != LAYOUT_IPHONE.X && theTextureSide != LAYOUT_IPHONE_RETINA.X && anAspect < IPAD_FAMILY_MAX_ASPECT)
+                {
+                    anAspect = MIN_ASPECT;
+                }
+            }
             int aWidth;
             if (theTextureSide == LAYOUT_IPHONE.X || theTextureSide == LAYOUT_IPHONE_RETINA.X)
             {
@@ -231,13 +315,14 @@ namespace Sexy
                 aWidth = theMonitorWidth;
                 aHeight = aWidth * 4 / 3;
             }
-            ChooseLayout(aWidth, aHeight);
+            ChooseLayoutCore(aWidth, aHeight);
             if (!LayoutForced)
             {
                 // The texture set follows the monitor, not the window: the window can be maximized or made
                 // full screen at any time, but the textures are loaded once (RelayoutFor keeps them).
                 PickLayout(theMonitorWidth, theMonitorHeight);
                 BackBufferSize = LayoutFor(TextureSide, aWidth, aHeight);
+                ApplySavedTextures(aWidth, aHeight);
             }
             // Keep the window at the chosen layout's aspect (a forced phone layout gets a phone window).
             DefaultWindowHeight = aHeight;

@@ -89,6 +89,8 @@ namespace Bookworm.Android
             // Shaking the device scrambles, as on iOS: the accelerometer feeds BookWormApp's shake detector.
             mSensorManager = (SensorManager)GetSystemService(SensorService);
             mAccelerometer = mSensorManager?.GetDefaultSensor(SensorType.Accelerometer);
+            // The kept texture set is read before the layout is chosen (Main's constructor).
+            Sexy.Constants.StorageDir = saveDir;
             mGame = new Sexy.Main();
             mGame.applicationStoragePath = saveDir;
             View view = (View)mGame.Services.GetService(typeof(View));
@@ -169,7 +171,26 @@ namespace Bookworm.Android
             if (hasFocus)
             {
                 HideSystemUi();
+                UpdateSafeInsetTop();
             }
+        }
+
+        public override void OnConfigurationChanged(global::Android.Content.Res.Configuration newConfig)
+        {
+            base.OnConfigurationChanged(newConfig);
+            // Turned: the notch is at another edge now.
+            Window?.DecorView?.Post(UpdateSafeInsetTop);
+        }
+
+        /// <summary>How far the camera cutout reaches down from the top as the device is held (Sexy.Main.SafeInsetTop).</summary>
+        private void UpdateSafeInsetTop()
+        {
+            if (Build.VERSION.SdkInt < BuildVersionCodes.P)
+            {
+                return;
+            }
+            DisplayCutout aCutout = Window?.DecorView?.RootWindowInsets?.DisplayCutout;
+            Sexy.Main.SafeInsetTop = aCutout?.SafeInsetTop ?? 0;
         }
 
         /// <summary>

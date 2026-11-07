@@ -76,6 +76,10 @@ namespace Sexy
 
         public static Image IMAGE_GROUP51;
 
+        /// <summary>Port (wide screens, iPad textures only: wideR, wideiPadR): the sheet of the wide layout's own art,
+        /// cut by AtlasResourceBase.UnpackWideImages.</summary>
+        public static Image IMAGE_WIDE;
+
         public static int SOUND_BAD;
 
         public static int SOUND_BONUSWORD;
@@ -202,6 +206,7 @@ namespace Sexy
                 {
                     IMAGE_IPAD1 = theManager.GetImageThrow("IMAGE_IPAD1");
                     IMAGE_IPAD2 = theManager.GetImageThrow("IMAGE_IPAD2");
+                    IMAGE_WIDE = theManager.GetImageThrow("IMAGE_WIDE");
                 }
                 else if (theScreenSize == 0x280)
                 {
@@ -220,6 +225,7 @@ namespace Sexy
                     IMAGE_GROUP24 = theManager.GetImageThrow("IMAGE_GROUP24");
                     IMAGE_GROUP31 = theManager.GetImageThrow("IMAGE_GROUP31");
                     IMAGE_GROUP51 = theManager.GetImageThrow("IMAGE_GROUP51");
+                    IMAGE_WIDE = theManager.GetImageThrow("IMAGE_WIDE");
                 }
                 SOUND_BAD = theManager.GetSoundThrow("SOUND_BAD");
                 SOUND_BONUSWORD = theManager.GetSoundThrow("SOUND_BONUSWORD");

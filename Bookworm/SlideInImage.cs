@@ -27,6 +27,10 @@ namespace Sexy
                 // the image tiled out from there).
                 Resize(mPos.mX, mPos.mY, System.Math.Max(mImage.mWidth, mApp.mWidth), mImage.mHeight);
             }
+            else if (UseWideImage())
+            {
+                Resize(mPos.mX + mWideOffset.mX, mPos.mY + mWideOffset.mY, mWideImage.mWidth, mWideImage.mHeight);
+            }
             else
             {
                 // Port (wide screens): a full-width image (the swags) is centred with the design.
@@ -43,6 +47,19 @@ namespace Sexy
         /// like the curtain behind them, every other tile mirrored.</summary>
         public bool mTile;
 
+        /// <summary>
+        /// Port (screens wider than the iPad design): drawn instead of mImage, mWideOffset from its place (the
+        /// pedestal, whose atlas image is cut off at the left where it met the screen's edge, centred there).
+        /// </summary>
+        public Image mWideImage;
+
+        public TPoint mWideOffset;
+
+        private bool UseWideImage()
+        {
+            return mWideImage != null && mApp.mScreenPos.mCenterX > 0;
+        }
+
         public override void Draw(Graphics g)
         {
             base.Draw(g);
@@ -51,9 +68,14 @@ namespace Sexy
             int aX = mImage.mWidth > aPos.mDesignWidth ? aPos.mWideImageX : 0;
             if (mTile)
             {
-                // Every other tile out from the centred one is mirrored, so neighbours meet at matching edges.
-                int aWidth = mImage.mWidth;
-                int aTileX = aX + aPos.mCenterX;
+                // Every other tile out from the centred one is mirrored, so neighbours meet at matching edges. The
+                // art's left end fades out (the drape's soft end; the right end is a clean cut), so two left ends
+                // met with a gap between them: every tile leaves out that strip (12 of 1536 columns), the centred
+                // one keeping its place.
+                int aTrim = (mImage.mWidth * 12 + 1535) / 1536;
+                int aWidth = mImage.mWidth - aTrim;
+                TRect aSrc = new TRect(aTrim, 0, aWidth, mImage.mHeight);
+                int aTileX = aX + aPos.mCenterX + aTrim;
                 int aTile = 0;
                 while (aTileX > 0)
                 {
@@ -62,8 +84,12 @@ namespace Sexy
                 }
                 for (; aTileX < mWidth; aTileX += aWidth, aTile++)
                 {
-                    g.DrawImageMirror(mImage, aTileX, 0, (aTile & 1) != 0);
+                    g.DrawImageMirror(mImage, aTileX, 0, aSrc, (aTile & 1) != 0);
                 }
+            }
+            else if (UseWideImage())
+            {
+                g.DrawImage(mWideImage, 0, 0);
             }
             else if (mStretchEdges)
             {

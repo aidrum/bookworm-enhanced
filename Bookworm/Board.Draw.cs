@@ -573,6 +573,8 @@ namespace Sexy
                 g.SetColorizeImages(true);
                 g.DrawImage(aQu, aX, aY);
                 g.SetColorizeImages(false);
+                // The "Qu" tile scores both letters.
+                DrawValueDots(g, thePiece, WordScore.GetLetterValue('Q') + WordScore.GetLetterValue('U'));
                 return;
             }
             string aText = aLetter.ToString();
@@ -582,6 +584,29 @@ namespace Sexy
             g.SetColorizeImages(true);
             g.DrawString(aText, aX + (mTileWidth - aWidth) / 2, aY + aBase / 4);
             g.SetColorizeImages(false);
+            DrawValueDots(g, thePiece, WordScore.GetLetterValue(aLetter));
+        }
+
+        /// <summary>
+        /// Port addition: the letter's value as gold dots in the tile's bottom-right corner, from the art the iOS
+        /// version ships unused (IMAGE_GROUP4_20: cel = value - 1, so 1 shows none, 2-4 one dot, 5-7 two, 8-10
+        /// three). The value is the current language's (WordScore.GetLetterValue).
+        /// </summary>
+        private void DrawValueDots(Graphics g, Piece thePiece, int theValue)
+        {
+            Image aDots = AtlasResourceBase.IMAGE_GROUP4_20;
+            int aCel = System.Math.Min(theValue, 10) - 1;
+            if (aDots == null || aCel <= 0 || mGreyed)
+            {
+                return;
+            }
+            int aCelWidth = aDots.GetCelWidth();
+            int aCelHeight = aDots.GetCelHeight();
+            // Inside the tile's frame: 14 of the 48-pixel cel (iPad Retina) in from the tile's edges.
+            int anInset = aCelWidth * 14 / 48;
+            g.SetColorizeImages(false);
+            g.DrawImageCel(aDots, (int)thePiece.mX + mTileWidth - aCelWidth - anInset,
+                (int)thePiece.mY + mTileHeight - aCelHeight - anInset, aCel);
         }
     }
 }

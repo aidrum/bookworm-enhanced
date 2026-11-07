@@ -234,6 +234,7 @@ namespace Sexy
             mResourceManager.SetGroupAsLoaded("Init");
             mAtlasResources = AtlasResourceBase.Create(GetTextureSide());
             mAtlasResources.UnpackImages();
+            AtlasResourceBase.UnpackWideImages();
             if (!LoadWords())
             {
                 mLoadingFailed = true;
@@ -252,7 +253,15 @@ namespace Sexy
             mScreens[3] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_00, new TPoint(mScreenPos.At(0), mScreenPos.At(4)), SlideInWidget.SLIDE_FROM_TOP);
             mScreens[4] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_01, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP) { mTile = true };
             mScreens[5] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP1_02, new TPoint(0, 1), SlideInWidget.SLIDE_FROM_TOP) { mTile = true };
-            mScreens[6] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_14, new TPoint(mScreenPos.At(0x78), mScreenPos.At(0x7c)), SlideInWidget.SLIDE_FROM_BOTTOM) { mStretchEdges = false };
+            // Port (wider than the iPad design): the whole pedestal (AtlasResourceBase.IMAGE_WIDE_LEX_PLATFORM, iPad textures only), which
+            // reaches 36 iPad pixels further left and starts 4 lower than the atlas's cut-off one (210 wide on iPad).
+            int aPedestalScale = AtlasResourceBase.IMAGE_GROUP11_14.mWidth / 210;
+            mScreens[6] = new SlideInImage(this, AtlasResourceBase.IMAGE_GROUP11_14, new TPoint(mScreenPos.At(0x78), mScreenPos.At(0x7c)), SlideInWidget.SLIDE_FROM_BOTTOM)
+            {
+                mStretchEdges = false,
+                mWideImage = AtlasResourceBase.IMAGE_WIDE_LEX_PLATFORM,
+                mWideOffset = new TPoint(-36 * aPedestalScale, 4 * aPedestalScale)
+            };
             mScreens[SCREEN_MENU_TABS] = new MenuTabWidget(this);
             mScreens[SCREEN_GAME_SELECTOR] = new BWGameSelector(this);
             mScreens[SCREEN_STATS] = new FameWidget(this);
@@ -399,8 +408,21 @@ namespace Sexy
 
         public TouchGlowWidget mTouchGlow; // 0xdb4
 
-        /// <summary>The app version (0xd8); the title is "BookWorm Deluxe " + version (0x28, FUN_0001160c).</summary>
-        public string mVersion = "1.0.5";
+        /// <summary>
+        /// The app version (0xd8); the title is "BookWorm Deluxe " + version (0x28, FUN_0001160c). Port: the build's
+        /// own version (Directory.Build.props &lt;Version&gt;, as the Android package's) instead of the iOS 1.0.5.
+        /// </summary>
+        public string mVersion = GetBuildVersion();
+
+        /// <summary>Port: this build's version, without the source revision the SDK appends after a '+'.</summary>
+        private static string GetBuildVersion()
+        {
+            System.Reflection.Assembly anAssembly = typeof(BookWormApp).Assembly;
+            string aVersion = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(anAssembly)?.InformationalVersion
+                ?? anAssembly.GetName().Version?.ToString(3) ?? "";
+            int aPlus = aVersion.IndexOf('+');
+            return aPlus >= 0 ? aVersion.Substring(0, aPlus) : aVersion;
+        }
 
         /// <summary>Options (FUN_0001160c sets all four on): 0x11fd (unknown), hints, definitions, confirm scramble.</summary>
         public bool mOption11fd = true; // 0x11fd
@@ -440,7 +462,23 @@ namespace Sexy
             RegistryWriteBoolean("ConfirmScramble", mConfirmScramble);
             RegistryWriteInteger("SfxVolume", (int)(GetSfxVolume() * 100));
             RegistryWriteInteger("MusicVolume", (int)(GetMusicVolume() * 100));
+            RegistryWriteBoolean("LandscapeBooks", mLandscapeBooks);
+            RegistryWriteBoolean("SubmitByDragging", mSubmitByDragging);
         }
+
+        /// <summary>
+        /// Port addition (the extra options, "Submit by Dragging", the PC version's name for it): a touch that
+        /// drags across tiles (from any tile, new or already in the word) submits the word when let go, if it is valid (else nothing happens,
+        /// as on iOS). On by default on desktops, as on the PC; off on phones and tablets, as on iOS.
+        /// </summary>
+        public bool mSubmitByDragging = !Main.IsMobile;
+
+        /// <summary>
+        /// Port addition (the extra options): turning a phone or tablet to landscape on the board shows the
+        /// landscape bookshelf, as on iOS. Off, the interface stays portrait and the board is laid out for the
+        /// wide screen instead (ScreenPos.mWideGame, as a wide desktop window).
+        /// </summary>
+        public bool mLandscapeBooks = true;
 
         /// <summary>Port: the settings SaveSettings kept.</summary>
         public void LoadSettings()
@@ -450,6 +488,8 @@ namespace Sexy
             RegistryReadBoolean("ShowHints", ref mShowHints);
             RegistryReadBoolean("ShowDefinitions", ref mShowDefinitions);
             RegistryReadBoolean("ConfirmScramble", ref mConfirmScramble);
+            RegistryReadBoolean("LandscapeBooks", ref mLandscapeBooks);
+            RegistryReadBoolean("SubmitByDragging", ref mSubmitByDragging);
             int aVolume = 0;
             if (RegistryReadInteger("SfxVolume", ref aVolume))
             {
@@ -480,10 +520,26 @@ namespace Sexy
         /// <summary>Lex has said "Welcome to Bookworm" this run (0x11fc).</summary>
         public bool mWelcomePlayed;
 
-        /// <summary>FUN_00015b70's path: the mode's saved game in the documents folder.</summary>
+        /// <summary>
+        /// FUN_00015b70's path: the mode's saved game in the documents folder. Port: each game keeps to the
+        /// language it was started in (Board.mLanguage); English's are the original names (classic.dat,
+        /// action.dat), another language's get its code (classic_es.dat, action_es.dat). The other language's
+        /// games wait on standby until it is picked again.
+        /// </summary>
+        public string GetSavedGamePath(int theMode, int theLanguage)
+        {
+            string aName = theMode == GAME_ARCADE ? "action" : "classic";
+            if (theLanguage > 0 && theLanguage < Localization.LANGUAGES.Length)
+            {
+                aName += "_" + Localization.LANGUAGES[theLanguage];
+            }
+            return System.IO.Path.Combine(applicationStoragePath ?? AppContext.BaseDirectory, aName + ".dat");
+        }
+
+        /// <summary>The current language's saved game of the mode.</summary>
         public string GetSavedGamePath(int theMode)
         {
-            return System.IO.Path.Combine(applicationStoragePath ?? AppContext.BaseDirectory, theMode == GAME_ARCADE ? "action.dat" : "classic.dat");
+            return GetSavedGamePath(theMode, Localization.CurrentIndex());
         }
 
         /// <summary>FUN_00015b70.</summary>
@@ -523,6 +579,7 @@ namespace Sexy
                 mBoard.Dispose();
             }
             mBoard = new Board(this);
+            mBoard.mLanguage = Localization.CurrentIndex();
             mBoard.mZOrder = 0x46;
             mScreens[SCREEN_BOARD] = mBoard;
             if (HasSavedGame(theMode))
@@ -565,25 +622,32 @@ namespace Sexy
         /// Vtable slot 53 (0x13158), when a dialog opens: pauses the board (FUN_00007184(board, 2, 1)). The
         /// original also clears an iOS idle-timer flag (app + 0xdb0), not needed here.
         /// </summary>
-        public void DialogOpened()
+        public void DialogOpened(Dialogoid theDialog)
         {
             mOpenDialogs++;
+            if (!mOpenDialogList.Contains(theDialog))
+            {
+                mOpenDialogList.Add(theDialog);
+            }
             mBoard?.SetPaused(2, true);
         }
 
-        /// <summary>Port: Dialogoids open now (ApplyLayout waits for them to close).</summary>
+        /// <summary>Port: how many Dialogoids are open now.</summary>
         public int mOpenDialogs;
 
+        /// <summary>Port: the Dialogoids open now, placed again by ApplyLayout (Dialogoid.Relayout).</summary>
+        private readonly System.Collections.Generic.List<Dialogoid> mOpenDialogList = new System.Collections.Generic.List<Dialogoid>();
+
         /// <summary>
-        /// Port addition (dynamic aspect): the window was resized or the device turned. Once nothing is moving,
-        /// no dialog is open and everything is loaded, ScreenPos is laid out for the new size (its design may
-        /// change between iPad and iPhone too: Constants.LayoutFor) and the screens
-        /// that are up are placed again (InterfaceWidget.Relayout); a balloon Lex was saying goes. Until then
-        /// Main keeps the old layout letterboxed in the window.
+        /// Port addition (dynamic aspect): the window was resized or the device turned. Once nothing is moving and
+        /// everything is loaded, ScreenPos is laid out for the new size (its design may change between iPad and
+        /// iPhone too: Constants.LayoutFor), the screens that are up are placed again (InterfaceWidget.Relayout),
+        /// and so are the open dialogs (Dialogoid.Relayout, keeping their animation); a balloon Lex was saying
+        /// goes. Until then Main keeps the old layout letterboxed in the window.
         /// </summary>
         public override bool ApplyLayout(Microsoft.Xna.Framework.Point theSize)
         {
-            if (!mLoadingDone || mInterfaceLock != 0 || mOpenDialogs > 0)
+            if (!mLoadingDone || mInterfaceLock != 0)
             {
                 return false;
             }
@@ -607,13 +671,18 @@ namespace Sexy
             {
                 mScreens[i]?.Relayout();
             }
+            foreach (Dialogoid aDialog in mOpenDialogList.ToArray())
+            {
+                aDialog.Relayout();
+            }
             mWordBalloon?.HideNow();
             return true;
         }
 
         /// <summary>Vtable slot 54 (0x13184): resumes the board (FUN_00007184(board, 2, 0)).</summary>
-        public void DialogClosed()
+        public void DialogClosed(Dialogoid theDialog)
         {
+            mOpenDialogList.Remove(theDialog);
             mOpenDialogs = Math.Max(0, mOpenDialogs - 1);
             mBoard?.SetPaused(2, false);
         }
@@ -633,6 +702,11 @@ namespace Sexy
                 return true;
             }
             if (!OrientationIsLandscape(theOrientation))
+            {
+                return false;
+            }
+            // Port: landscape books off, the interface stays portrait (the layout follows the wide screen).
+            if (!mLandscapeBooks)
             {
                 return false;
             }
@@ -713,16 +787,40 @@ namespace Sexy
             {
                 mBoard.SaveGame(mGameMode);
             }
+            else
+            {
+                SaveProgress();
+            }
         }
 
         /// <summary>Vtable slot 58 (0x12708): quitting saves the game in progress.</summary>
         public override void Shutdown()
         {
-            if (!mShutdown && mBoard != null && mBoard.CanSaveGame())
+            if (!mShutdown)
             {
-                mBoard.SaveGame(mGameMode);
+                if (mBoard != null && mBoard.CanSaveGame())
+                {
+                    mBoard.SaveGame(mGameMode);
+                }
+                else
+                {
+                    SaveProgress();
+                }
             }
             base.Shutdown();
+        }
+
+        /// <summary>
+        /// Port addition: saves the personal bests and the collections when there is no game in progress to save
+        /// (SaveGame saves them too), so the Stats page survives a game that ended before the app closed.
+        /// </summary>
+        public void SaveProgress()
+        {
+            mPersonalBests?.Save();
+            if (mCollectionator != null && mScreens[SCREEN_MENU_CURTAIN] != null)
+            {
+                mCollectionator.Save();
+            }
         }
 
         /// <summary>
@@ -870,6 +968,12 @@ namespace Sexy
             {
                 return;
             }
+            // Port: back from the board to the menus, the personal bests (the Stats page) and the collections are
+            // saved at once; desktops never suspend the app the way iOS does, and closing it may skip Shutdown.
+            if (HasBoard(mInterfaceState) && !HasBoard(theState))
+            {
+                SaveProgress();
+            }
             mInterfaceState = theState;
             for (int i = 0; i < SCREEN_COUNT; i++)
             {
@@ -886,6 +990,11 @@ namespace Sexy
             {
                 mMusicInterface.PlayMusic(INTERFACE_MUSIC[theState], 1.0f, true);
             }
+        }
+
+        internal static bool HasBoard(int theState)
+        {
+            return theState >= 0 && theState < INTERFACE_TARGETS.GetLength(0) && INTERFACE_TARGETS[theState, SCREEN_BOARD] != 0;
         }
 
         /// <summary>

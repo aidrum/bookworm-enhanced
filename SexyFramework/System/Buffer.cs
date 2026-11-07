@@ -27,7 +27,8 @@ namespace Sexy
 
         public byte[] GetDataPtr()
         {
-            return mData.GetBuffer();
+            // Only the written bytes (GetBuffer would add the stream's unused capacity as trailing zeros).
+            return mData.ToArray();
         }
 
         public Buffer()
@@ -306,6 +307,9 @@ namespace Sexy
                 mData.WriteByte(theBuffer[i]);
             }
             mDataBitSize = (int)mData.Length * 8;
+            // Reads start at the front (writing the data left the stream at its end, so every read came back empty).
+            mData.Seek(0L, 0);
+            mReadBitPos = 0;
         }
 
         public void SetData(List<byte> theOtherList, int theCount)
@@ -313,6 +317,8 @@ namespace Sexy
             mData = new MemoryStream();
             mData.Write(theOtherList.ToArray(), 0, theCount);
             mDataBitSize = (int)mData.Length * 8;
+            mData.Seek(0L, 0);
+            mReadBitPos = 0;
         }
 
         public string ToWebString()

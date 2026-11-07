@@ -337,6 +337,68 @@ namespace Sexy
         /// <summary>0x1f1a0.</summary>
         public override void Draw(Graphics g)
         {
+            float aScale = GetDrawScale();
+            if (aScale != 1f)
+            {
+                g.SetScale(aScale, aScale, 0f, 0f);
+            }
+            DrawLex(g);
+            if (aScale != 1f)
+            {
+                g.SetScale(1f, 1f, 0f, 0f);
+            }
+        }
+
+        /// <summary>
+        /// Port (wide game layout): how much bigger he is drawn (from his top left). He takes the size of his
+        /// place (GetPlaceScale) only while he is invisible (his moves to and from the board fade him out before
+        /// he jumps) or when he jumps there at once, so he never grows or shrinks in sight.
+        /// </summary>
+        private float mDrawScale = 1f;
+
+        public float GetDrawScale()
+        {
+            return mDrawScale;
+        }
+
+        /// <summary>Port: ScreenPos.mWideLexScale at his spot beside the board (the board's states), else 1.</summary>
+        private float GetPlaceScale()
+        {
+            ScreenPos aPos = mApp.mScreenPos;
+            return aPos.mWideGame && mInterfaceTarget == 2 && BookWormApp.HasBoard(mInterfaceState) ? aPos.mWideLexScale : 1f;
+        }
+
+        /// <summary>Port: the place's size once he can't be seen changing (see mDrawScale); his widget fits it.</summary>
+        private void UpdateDrawScale()
+        {
+            float aScale = GetPlaceScale();
+            if (aScale != mDrawScale && (mAlpha == 0 || !mTimeline.IsRunning()))
+            {
+                mDrawScale = aScale;
+                MarkDirty();
+            }
+            Image aSizeImage = AtlasResourceBase.IMAGE_GROUP1_06;
+            if (aSizeImage != null)
+            {
+                int aWidth = (int)System.Math.Ceiling(aSizeImage.mWidth * mDrawScale);
+                int aHeight = (int)System.Math.Ceiling(aSizeImage.mHeight * mDrawScale);
+                if (aWidth != mWidth || aHeight != mHeight)
+                {
+                    Resize(mX, mY, aWidth, aHeight);
+                }
+            }
+        }
+
+        /// <summary>Port: his mouth's place on the screen (ScreenPos 0x180, 0x184 into him, scaled with him).</summary>
+        public TPoint GetMouth()
+        {
+            ScreenPos aPos = mApp.mScreenPos;
+            float aScale = GetDrawScale();
+            return new TPoint(mX + (int)System.Math.Round(aPos.At(0x180) * aScale), mY + (int)System.Math.Round(aPos.At(0x184) * aScale));
+        }
+
+        private void DrawLex(Graphics g)
+        {
             if (mAlpha < 0xff)
             {
                 g.SetColor(new Color(255, 255, 255, mAlpha));
@@ -370,6 +432,7 @@ namespace Sexy
                 mTimeline.Tick();
                 Move(mTimelinePos.mX, mTimelinePos.mY);
             }
+            UpdateDrawScale();
             // While the board is up and paused, nothing else updates.
             if (mInterfaceState == 10 && mApp.mBoard != null && mApp.mBoard.IsPaused())
             {

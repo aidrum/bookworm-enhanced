@@ -17,6 +17,8 @@ namespace Bookworm.Desktop
             string storage = Environment.GetEnvironmentVariable("SEXY_STORAGE_DIR") ?? GetDefaultStorageDir();
             Directory.CreateDirectory(storage);
             Sexy.Main.AppFactory = game => new BookWormApp(game);
+            // The kept texture set is read before the layout is chosen (Main's constructor).
+            Sexy.Constants.StorageDir = storage;
             using (Sexy.Main game = new Sexy.Main())
             {
                 game.applicationStoragePath = storage;

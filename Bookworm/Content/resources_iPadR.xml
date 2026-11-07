@@ -20,6 +20,7 @@
 		<Image id="GROUP24"						path="group24iPadR" />
 		<Image id="GROUP31"						path="group31iPadR" />
 		<Image id="GROUP51"						path="group51iPadR" />
+		<Image id="WIDE"					path="wideiPadR" />
         
     <SetDefaults idprefix="FONT_" path="fonts" />
 		<Font id="COOPER"						path="CooperBlack76.dat" />

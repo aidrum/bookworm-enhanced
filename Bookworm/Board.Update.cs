@@ -532,6 +532,7 @@ namespace Sexy
                 {
                     mState = STATE_GAME_OVER_START;
                     mLevelTarget = 0;
+                    mApp.mPersonalBests.Save();
                     mApp.mMusicInterface?.PlayMusic(mApp.mGameMode == BookWormApp.GAME_ARCADE ? 5 : 6, 0, false);
                 }
             }

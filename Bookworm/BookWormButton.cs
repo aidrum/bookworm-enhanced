@@ -20,6 +20,9 @@ namespace Sexy
         /// <summary>Where a centred label (justify 2) is drawn: its centre x and baseline y (0x104).</summary>
         public TPoint mLabelPos; // 0x104
 
+        /// <summary>Port: when above 0, only this many rows of the image are drawn (the Spanish menu tabs).</summary>
+        public int mImageRows;
+
         public BookWormButton(int theId, ButtonListener theListener, BookWormApp theApp) : base(theId, theListener)
         {
             mApp = theApp;
@@ -74,6 +77,10 @@ namespace Sexy
                 if (mStretchImage)
                 {
                     g.DrawImage(anImage, new TRect(0, 0, mWidth, mHeight), new TRect(0, 0, anImage.mWidth, anImage.mHeight));
+                }
+                else if (mImageRows > 0)
+                {
+                    g.DrawImage(anImage, 0, 0, new TRect(0, 0, anImage.mWidth, System.Math.Min(mImageRows, anImage.mHeight)));
                 }
                 else
                 {

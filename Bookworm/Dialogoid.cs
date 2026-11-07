@@ -61,7 +61,15 @@ namespace Sexy
             mZOrder = 100;
             mApp.mWidgetManager.AddWidget(this);
             mApp.mWidgetManager.AddBaseModal(this);
-            mApp.DialogOpened();
+            mApp.DialogOpened(this);
+        }
+
+        /// <summary>
+        /// Port addition (dynamic aspect): the screen changed shape while this is open (BookWormApp.ApplyLayout,
+        /// ScreenPos laid out again): placed again for it, without restarting its animation.
+        /// </summary>
+        public virtual void Relayout()
+        {
         }
 
         /// <summary>vf81 (0x3e5d0): removed and deleted; the app resumes (slot 54).</summary>
@@ -69,7 +77,7 @@ namespace Sexy
         {
             mApp.mWidgetManager.RemoveBaseModal(this);
             mApp.mWidgetManager.RemoveWidget(this);
-            mApp.DialogClosed();
+            mApp.DialogClosed(this);
             mApp.SafeDeleteWidget(this);
         }
 
@@ -78,7 +86,7 @@ namespace Sexy
         {
             mApp.mWidgetManager.RemoveBaseModal(this);
             mApp.mWidgetManager.RemoveWidget(this);
-            mApp.DialogClosed();
+            mApp.DialogClosed(this);
             mApp.SafeDeleteWidget(this);
         }
 

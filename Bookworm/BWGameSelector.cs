@@ -50,13 +50,15 @@ namespace Sexy
         private TextOrImageButton mHowToPlay;
 
         /// <summary>Port: the art's gradients, top to bottom (sampled from it): yellow (Classic, Arcade), pink (How to Play).</summary>
-        private static readonly Color MODE_TEXT_TOP = new Color(254, 250, 20, 255);
+        internal static readonly Color MODE_TEXT_TOP = new Color(254, 250, 20, 255);
 
-        private static readonly Color MODE_TEXT_BOTTOM = new Color(251, 210, 5, 255);
+        internal static readonly Color MODE_TEXT_BOTTOM = new Color(251, 210, 5, 255);
 
-        private static readonly Color HOW_TO_PLAY_TEXT_TOP = new Color(238, 198, 224, 255);
+        internal static readonly Color HOW_TO_PLAY_TEXT_TOP = new Color(238, 198, 224, 255);
 
-        private static readonly Color HOW_TO_PLAY_TEXT_BOTTOM = new Color(180, 67, 117, 255);
+        internal static readonly Color HOW_TO_PLAY_TEXT_BOTTOM = new Color(180, 67, 117, 255);
+
+        internal const string HOW_TO_PLAY_TEXT_ES = "CÓMO JUGAR";
 
         /// <summary>
         /// Port: in Spanish the mode buttons draw their titles in outlined Cooper Black (the art's typeface), two
@@ -67,7 +69,19 @@ namespace Sexy
             bool aText = Localization.IsSpanish;
             mClassic.SetText(aText ? "JUEGO\nCLÁSICO" : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
             mArcade.SetText(aText ? "JUEGO\nDE ACCIÓN" : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
-            mHowToPlay.SetText(aText ? "CÓMO JUGAR" : null, HOW_TO_PLAY_TEXT_TOP, HOW_TO_PLAY_TEXT_BOTTOM);
+            mHowToPlay.SetText(aText ? HOW_TO_PLAY_TEXT_ES : null, HOW_TO_PLAY_TEXT_TOP, HOW_TO_PLAY_TEXT_BOTTOM);
+            // The Continue ribbons: "Saved Game" is baked into their art; Spanish has its own (localized sheet).
+            Image aRibbon = AtlasResourceBase.IMAGE_GROUP11_16;
+            if (aText)
+            {
+                Image aSpanish = AtlasResourceBase.GetLocalizedImage(mApp, aRibbon.mWidth / 47, AtlasResourceBase.LOCALIZED_SAVED_GAME_ES);
+                if (aSpanish != null)
+                {
+                    aRibbon = aSpanish;
+                }
+            }
+            mContinueClassic.mButtonImage = aRibbon;
+            mContinueArcade.mButtonImage = aRibbon;
         }
 
         private BookWormButton AddButton(int theId, Image theImage, int thePosOffset)

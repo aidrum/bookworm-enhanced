@@ -26,6 +26,24 @@ namespace Sexy
         /// </summary>
         public static bool IsMobile => OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
 
+        /// <summary>
+        /// Port: set by the platform (Android): how far down from the screen's top a camera cutout (notch) reaches,
+        /// in screen pixels as the device is held; 0 without one, and on the desktop.
+        /// </summary>
+        public static volatile int SafeInsetTop;
+
+        /// <summary>Port: SafeInsetTop in the game's coordinates (the letterboxed layout's), 0 below its top.</summary>
+        public static int GetSafeInsetTopInGame()
+        {
+            SexyAppBase anApp = GlobalStaticVars.gSexyAppBase;
+            int anInset = SafeInsetTop;
+            if (!IsMobile || anInset <= 0 || anApp == null)
+            {
+                return 0;
+            }
+            return Math.Max(0, (int)Math.Ceiling(anApp.mScreenScales.InvMapTouchY(anInset)));
+        }
+
         /// <summary>Set by the platform (Android's back button); handled as a back press on the next update.</summary>
         public static volatile bool BackRequested;
 

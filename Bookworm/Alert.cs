@@ -99,6 +99,13 @@ namespace Sexy
             Resize((mApp.mWidth - aWidth) / 2, (mApp.mHeight - aY) / 2, aWidth, aY);
         }
 
+        /// <summary>Port: placed again for the new layout (centred, the text and buttons at its sizes).</summary>
+        public override void Relayout()
+        {
+            Layout();
+            MarkDirty();
+        }
+
         /// <summary>vf80 (0x3cdc4).</summary>
         public override void Show()
         {

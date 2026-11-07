@@ -14,11 +14,18 @@ namespace Sexy
 
         /// <summary>
         /// Draws the lines centred on theCenterX, the first on theFirstBaseline and each next a line spacing
-        /// lower. The gradient runs from the first line's ascent to the last line's baseline.
+        /// lower. The gradient runs from the first line's ascent to the last line's baseline. theScale (below 1:
+        /// the fonts cannot be scaled themselves) shrinks it all about (theCenterX, theFirstBaseline); the line
+        /// spacing is before scaling.
         /// </summary>
-        public static void Draw(Graphics g, Font theFont, string[] theLines, int theCenterX, int theFirstBaseline, Color theTop, Color theBottom, Color? theOutline = null)
+        public static void Draw(Graphics g, Font theFont, string[] theLines, int theCenterX, int theFirstBaseline, Color theTop, Color theBottom, Color? theOutline = null, int theLineSpacing = 0, float theScale = 1f)
         {
-            int aLineHeight = theFont.GetLineSpacing();
+            bool aScaled = theScale != 1f;
+            if (aScaled)
+            {
+                g.SetScale(theScale, theScale, theCenterX, theFirstBaseline);
+            }
+            int aLineHeight = theLineSpacing > 0 ? theLineSpacing : theFont.GetLineSpacing();
             int anAscent = theFont.GetAscent();
             // Below the baseline: the descenders (g, j, p, q, y) and their outline's glow.
             int aDescent = System.Math.Max(0, theFont.GetHeight() - anAscent) + anAscent / 4;
@@ -51,12 +58,19 @@ namespace Sexy
                 for (int aBand = aY - anAscent * 3 / 2; aBand < aY + aDescent; aBand += aUnit)
                 {
                     float t = System.Math.Clamp((aBand + aUnit * 0.5f - aTop) / (float)System.Math.Max(1, aBottom - aTop), 0f, 1f);
-                    g.ClipRect(-0x4000, aBand, 0x8000, aUnit);
+                    // The clip is not scaled with the drawing: the band's place once scaled.
+                    int aBandTop = (int)System.Math.Round(theFirstBaseline + (aBand - theFirstBaseline) * theScale);
+                    int aBandBottom = (int)System.Math.Round(theFirstBaseline + (aBand + aUnit - theFirstBaseline) * theScale);
+                    g.ClipRect(-0x4000, aBandTop, 0x8000, aBandBottom - aBandTop);
                     // The font directly: Graphics.DrawString skips a string whose baseline is above the clip's
                     // top, which would drop every band below the baseline (the descenders).
                     aTextFont.DrawString(g, aX, aY, theLines[i], Color.Lerp(theTop, theBottom, t), g.GetClipRect());
                     g.mClipRect = anOldClip;
                 }
+            }
+            if (aScaled)
+            {
+                g.SetScale(1f, 1f, 0f, 0f);
             }
         }
 

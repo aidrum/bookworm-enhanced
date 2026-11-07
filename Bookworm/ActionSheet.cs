@@ -71,6 +71,20 @@ namespace Sexy
             AddWidget(mGreenButton);
         }
 
+        /// <summary>
+        /// Port: the message, filled by theBuild (which also fits it) now and again whenever its width changes
+        /// (Relayout): its text is wrapped as it is added.
+        /// </summary>
+        public void SetMessage(System.Action<FancyTextWidget> theBuild)
+        {
+            mMessageBuild = theBuild;
+            FancyTextWidget aMessage = GetMessage();
+            aMessage.Clear();
+            theBuild(aMessage);
+        }
+
+        private System.Action<FancyTextWidget> mMessageBuild;
+
         /// <summary>FUN_0003469c: the message above the buttons, as wide as the buttons.</summary>
         public FancyTextWidget GetMessage()
         {
@@ -149,6 +163,30 @@ namespace Sexy
             mDimPath.SetKey(mSlideTicks, DIM_ALPHA, false, true);
         }
 
+        /// <summary>
+        /// Port: placed again for the new layout: the message rewrapped to the new width, the buttons and the
+        /// slide's path laid out again, and the sheet put where its slide (in or out) has got to.
+        /// </summary>
+        public override void Relayout()
+        {
+            ScreenPos aPos = mApp.mScreenPos;
+            int aWidth = aPos.mDesignWidth - aPos.At(0x360) - aPos.At(0x368);
+            if (mMessage != null && mMessage.mWidth != aWidth)
+            {
+                mMessage.Resize(mMessage.mX, mMessage.mY, aWidth, mMessage.mHeight);
+                if (mMessageBuild != null)
+                {
+                    mMessage.Clear();
+                    mMessageBuild(mMessage);
+                }
+            }
+            int aTick = mSlideTick;
+            Layout();
+            mSlideTick = System.Math.Min(aTick, mSlideTicks);
+            Step();
+            MarkDirty();
+        }
+
         /// <summary>vf81 (0x34998): slides out; the update finishes closing.</summary>
         public override void Close()
         {
@@ -200,11 +238,32 @@ namespace Sexy
             g.SetColorizeImages(true);
             g.FillRect(mDimRect);
             g.SetColorizeImages(false);
-            // Port: the iPad's backdrop is centred in the iPhone design (ScreenPos.mWideImageX); on wide screens it
-            // is centred too, its end columns stretched to the screen's edges.
+            // Port: the iPad's backdrop is centred in the iPhone design (ScreenPos.mWideImageX); on screens wider than
+            // it, sliced: its framed ends (the side borders and the top corners' scrolls) at the screen's edges as they
+            // are, the plain middle stretched between them (its gradient runs top to bottom, so it stretches cleanly).
             ScreenPos aPos = mApp.mScreenPos;
+            int aY = mDimRect.mHeight;
+            if (mApp.mWidth > mBackground.mWidth)
+            {
+                DrawSliced(g, mBackground, aY, mApp.mWidth);
+                return;
+            }
             int aX = (mBackground.mWidth > aPos.mDesignWidth ? aPos.mWideImageX : 0) + aPos.mCenterX;
-            ScreenPos.DrawStretchedEdges(g, mBackground, aX, mDimRect.mHeight, mApp.mWidth);
+            g.DrawImage(mBackground, aX, aY);
+        }
+
+        /// <summary>Port: the backdrop's framed ends: 104 of its 1536 columns (iPad Retina) each side.</summary>
+        private const int BACKGROUND_END = 104;
+
+        /// <summary>Port: theImage theWidth wide at (0, theY): its ends as they are, its middle stretched.</summary>
+        private static void DrawSliced(Graphics g, Image theImage, int theY, int theWidth)
+        {
+            int aW = theImage.mWidth;
+            int aH = theImage.mHeight;
+            int anEnd = (aW * BACKGROUND_END + 1535) / 1536;
+            g.DrawImage(theImage, new TRect(0, theY, anEnd, aH), new TRect(0, 0, anEnd, aH));
+            g.DrawImage(theImage, new TRect(anEnd, theY, theWidth - 2 * anEnd, aH), new TRect(anEnd, 0, aW - 2 * anEnd, aH));
+            g.DrawImage(theImage, new TRect(theWidth - anEnd, theY, anEnd, aH), new TRect(aW - anEnd, 0, anEnd, aH));
         }
     }
 }

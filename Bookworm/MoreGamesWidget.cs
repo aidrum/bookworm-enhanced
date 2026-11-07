@@ -64,7 +64,6 @@ namespace Sexy
         {
             RemoveAllWidgets(true, true);
             mTitleImage?.Dispose();
-            mBlankTitleImage?.Dispose();
             base.Dispose();
         }
 
@@ -178,13 +177,13 @@ namespace Sexy
                 return;
             }
             int s = LayoutScale();
-            // Port: the text-free banner the History one shares (images/title_blank*), at the layout's scale and
+            // Port: the text-free banner the History one shares (AtlasResourceBase localized art), at the layout's scale and
             // the title's width (its shadow runs a little longer than the 320x59 title's), with "More Games" drawn
             // over it in either language.
             if (mBlankTitleScale != s)
             {
-                mBlankTitleImage?.Dispose();
-                mBlankTitleImage = GradientText.LoadScaled(mApp, "images/title_blank", s);
+                // (Part of the shared localized sheet: not disposed here.)
+                mBlankTitleImage = AtlasResourceBase.GetLocalizedImage(mApp, s, AtlasResourceBase.LOCALIZED_BLANK_BANNER);
                 mBlankTitleScale = s;
             }
             TRect aDest = new TRect(0, 0, mTitleImage.mWidth * s, mTitleImage.mHeight * s);

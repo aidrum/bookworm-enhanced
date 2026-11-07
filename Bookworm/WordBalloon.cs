@@ -149,10 +149,71 @@ namespace Sexy
             TPoint aSpot = mApp.GetLexBoardSpot(mApp.mInterfaceState, false);
             if (aSpot.mX == aPos.mWideLex.mX && aSpot.mY == aPos.mWideLex.mY)
             {
-                theRect.mX += aSpot.mX - aPos.At(0x90);
-                theRect.mY += aSpot.mY - aPos.At(0x94);
+                // Beside him as in portrait: past his scaled width, as far down his scaled height.
+                Image aLex = AtlasResourceBase.IMAGE_GROUP1_06;
+                int aGrowth = aLex != null ? (int)System.Math.Round(aLex.mWidth * (aPos.mWideLexScale - 1f)) : 0;
+                theRect.mX += aSpot.mX - aPos.At(0x90) + aGrowth;
+                theRect.mY = aSpot.mY + (int)System.Math.Round((theRect.mY - aPos.At(0x94)) * aPos.mWideLexScale);
             }
             return theRect;
+        }
+
+        private void PrepareWordBalloon()
+        {
+            PrepareLexBalloon(0x230, false);
+        }
+
+        /// <summary>
+        /// Lex's rectangular balloons: the word one (ScreenPos 0x230, IMAGE_GROUP51_03 as it is) and the definition
+        /// one (0x260, the same art stretched as a box). Port (wide game layout): the wide art above Lex instead
+        /// (AtlasResourceBase.IMAGE_WIDE_SPEECH_BUBBLE: its tail in the middle of its bottom; ScreenPos places it),
+        /// as much wider as the portrait balloon is wider than its art (DrawWideBalloon). Its body is the portrait
+        /// art's, 15 x 1 further in (iPad Retina pixels): the text moves with it.
+        /// </summary>
+        private void PrepareLexBalloon(int theOffset, bool theBox)
+        {
+            ScreenPos aPos = mApp.mScreenPos;
+            TRect aRect = aPos.RectAt(theOffset);
+            Image aWide = AtlasResourceBase.IMAGE_WIDE_SPEECH_BUBBLE;
+            Image aPortrait = AtlasResourceBase.IMAGE_GROUP51_03;
+            if (aPos.mWideGame && aWide != null)
+            {
+                aRect.mWidth = aWide.mWidth + System.Math.Max(0, aRect.mWidth - aPortrait.mWidth);
+                aRect.mHeight = aWide.mHeight;
+                int anOffset = (int)System.Math.Round(15 * aWide.mWidth / 748.0);
+                int anOffsetY = (int)System.Math.Round(1 * aWide.mWidth / 748.0);
+                Prepare(aRect, aWide, false, anOffset, anOffsetY);
+                return;
+            }
+            Prepare(aRect, aPortrait, theBox);
+        }
+
+        /// <summary>
+        /// Port: the wide balloon art theWidth wide: its ends (the rounded corners) and its middle (the tail) as
+        /// they are, the plain body between them stretched by half the extra width each (iPad Retina columns: ends
+        /// 0-120 and 620-748, tail 340-440).
+        /// </summary>
+        private static void DrawWideBalloon(Graphics g, Image theImage, int theWidth)
+        {
+            int aW = theImage.mWidth;
+            int aH = theImage.mHeight;
+            int aExtra = theWidth - aW;
+            if (aExtra <= 0)
+            {
+                g.DrawImage(theImage, 0, 0);
+                return;
+            }
+            int a = aW * 120 / 748;
+            int b = aW * 340 / 748;
+            int c = aW * 440 / 748;
+            int d = aW * 620 / 748;
+            int aLeftExtra = aExtra / 2;
+            int aRightExtra = aExtra - aLeftExtra;
+            g.DrawImage(theImage, new TRect(0, 0, a, aH), new TRect(0, 0, a, aH));
+            g.DrawImage(theImage, new TRect(a, 0, b - a + aLeftExtra, aH), new TRect(a, 0, b - a, aH));
+            g.DrawImage(theImage, new TRect(b + aLeftExtra, 0, c - b, aH), new TRect(b, 0, c - b, aH));
+            g.DrawImage(theImage, new TRect(c + aLeftExtra, 0, d - c + aRightExtra, aH), new TRect(c, 0, d - c, aH));
+            g.DrawImage(theImage, new TRect(d + aExtra, 0, aW - d, aH), new TRect(d, 0, aW - d, aH));
         }
 
         /// <summary>FUN_00030394: speech in the big bubble; too long, it gets twice the line spacing.</summary>
@@ -208,7 +269,7 @@ namespace Sexy
             mTextWidget.AddChunk(SexyAppBase.Loc("for bonus points!"));
             mTextWidget.NewLine(0);
             mTextWidget.Fit(1);
-            Prepare(mApp.mScreenPos.RectAt(0x230), AtlasResourceBase.IMAGE_GROUP51_03, false);
+            PrepareWordBalloon();
             mPendingMode = MODE_BONUS_WORD;
             mText = "";
         }
@@ -281,7 +342,7 @@ namespace Sexy
                 }
             }
             mTextWidget.Fit(2);
-            Prepare(mApp.mScreenPos.RectAt(0x230), AtlasResourceBase.IMAGE_GROUP51_03, false);
+            PrepareWordBalloon();
             if (mMode == MODE_WORD)
             {
                 MemoryImage aShown = mShownImage;
@@ -312,7 +373,7 @@ namespace Sexy
             mTextWidget.AddText(theText, 0);
             mTextWidget.NewLine(0);
             mTextWidget.Fit(2);
-            Prepare(mApp.mScreenPos.RectAt(0x230), AtlasResourceBase.IMAGE_GROUP51_03, false);
+            PrepareWordBalloon();
             mPendingMode = MODE_TEXT;
             mText = "";
         }
@@ -347,7 +408,7 @@ namespace Sexy
                     break;
                 }
             }
-            Prepare(mApp.mScreenPos.RectAt(0x260), AtlasResourceBase.IMAGE_GROUP51_03, true);
+            PrepareLexBalloon(0x260, true);
             mPendingMode = MODE_DEFINITION;
             mText = "";
         }
@@ -372,7 +433,7 @@ namespace Sexy
                 }
             }
             mTextWidget.Fit(2);
-            Prepare(mApp.mScreenPos.RectAt(0x230), AtlasResourceBase.IMAGE_GROUP51_03, false);
+            PrepareWordBalloon();
             mPendingMode = MODE_TITLE;
             mText = "";
             mTimer = 500;
@@ -382,7 +443,7 @@ namespace Sexy
         /// FUN_000301d0: renders the background (stretched as a box, or as is) and the laid-out text into the
         /// next image, to show at theRect.
         /// </summary>
-        private void Prepare(TRect theRect, Image theBackground, bool theBox)
+        private void Prepare(TRect theRect, Image theBackground, bool theBox, int theTextDX = 0, int theTextDY = 0)
         {
             mTimer = 0;
             // Port: with Lex on the menu pages past 16:9 (BookWormApp.GetLexLift).
@@ -404,11 +465,15 @@ namespace Sexy
             {
                 g.DrawImageBox(new TRect(0, 0, theRect.mWidth, theRect.mHeight), theBackground);
             }
+            else if (theBackground == AtlasResourceBase.IMAGE_WIDE_SPEECH_BUBBLE)
+            {
+                DrawWideBalloon(g, theBackground, theRect.mWidth);
+            }
             else
             {
                 g.DrawImage(theBackground, 0, 0);
             }
-            g.Translate(mTextWidget.mX, mTextWidget.mY);
+            g.Translate(mTextWidget.mX + theTextDX, mTextWidget.mY + theTextDY);
             mTextWidget.Draw(g);
             g.SetRenderTarget(null);
             g.PrepareForReuse();

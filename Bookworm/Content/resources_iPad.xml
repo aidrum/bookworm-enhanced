@@ -12,6 +12,7 @@
 		<Image id="GROUP6"						path="group6R" />
         <Image id="IPAD1"                       path="ipad1" />
         <Image id="IPAD2"                       path="ipad2" />
+        <Image id="WIDE"                        path="wideR" />
 
     <SetDefaults idprefix="FONT_" path="fonts" />
 		<Font id="COOPER"						path="CooperBlack38.dat" />
