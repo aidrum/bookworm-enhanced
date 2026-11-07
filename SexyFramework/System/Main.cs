@@ -27,7 +27,7 @@ namespace Sexy
         public static bool IsMobile => OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
 
         /// <summary>
-        /// Port: set by the platform (Android): how far down from the screen's top a camera cutout (notch) reaches,
+        /// Port: set by the platform (Android, iOS): how far down from the screen's top a camera cutout (notch) reaches,
         /// in screen pixels as the device is held; 0 without one, and on the desktop.
         /// </summary>
         public static volatile int SafeInsetTop;

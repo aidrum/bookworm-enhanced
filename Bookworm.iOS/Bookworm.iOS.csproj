@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    iOS / iPadOS build (MonoGame iOS). Like Bookworm.Android, it swaps the DesktopGL MonoGame the shared
+    projects compile against for MonoGame.Framework.iOS (same assembly, same API).
+    Unsigned device build (what .github/workflows/build.yml does, then zips Payload/*.app into an .ipa
+    that Sideloadly / AltStore / SideStore / TrollStore re-sign on install):
+      dotnet build Bookworm.iOS -c Release -r ios-arm64 -p:EnableCodeSigning=false
+    Needs a Mac with Xcode and the .NET iOS workload.
+  -->
+  <PropertyGroup>
+    <!-- Pinned to the iOS 26.0 bindings: the default (latest) ones require the newest Xcode, which CI
+         runners lag behind; these build with any Xcode 26.x or later. -->
+    <TargetFramework>net10.0-ios26.0</TargetFramework>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Bookworm.iOS</RootNamespace>
+    <AssemblyName>Bookworm</AssemblyName>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <ApplicationId>com.aidrum.bookworm</ApplicationId>
+    <ApplicationTitle>Bookworm</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+    <!-- Device builds only (no simulator setup), so ios-arm64 unless another RID is given. -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">ios-arm64</RuntimeIdentifier>
+  </PropertyGroup>
+  <!-- iOS forbids JIT: Release is fully AOT compiled. As on Android, trimming only touches the framework
+       libraries; the game's own assemblies are kept whole. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <TrimMode>partial</TrimMode>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Bookworm" RootMode="All" />
+    <TrimmerRootAssembly Include="BookwormGame" RootMode="All" />
+    <TrimmerRootAssembly Include="SexyFramework" RootMode="All" />
+    <TrimmerRootAssembly Include="MonoGame.Framework" RootMode="All" />
+    <TrimmerRootAssembly Include="NVorbis" RootMode="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.4.1" />
+    <!-- CPU image decoding with straight alpha (see AppDelegate.DecodeImage). -->
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bookworm\Bookworm.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- App icon (a single 1024px image; actool makes the rest; tools/convert_icons.py). -->
+    <ImageAsset Remove="Icons\**" />
+    <ImageAsset Include="Icons\Assets.xcassets\**\*" Link="Assets.xcassets\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Remove="Icons\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Converted game assets, all four resource sets, read as loose files from the app bundle's Content
+         folder (ContentFS's default: AppContext.BaseDirectory/Content); the game picks a set from the screen. -->
+    <BundleResource Include="..\Bookworm\Content\**\*" Link="Content\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

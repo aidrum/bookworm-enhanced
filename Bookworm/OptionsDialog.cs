@@ -34,6 +34,9 @@ namespace Sexy
         /// <summary>Port: the extra options' Submit by Dragging switch (BookWormApp.mSubmitByDragging).</summary>
         public const int SWITCH_SUBMIT_BY_DRAGGING = 9;
 
+        /// <summary>Port: the extra options' Check for Updates switch (BookWormApp.mCheckForUpdates, UpdateChecker).</summary>
+        public const int SWITCH_CHECK_FOR_UPDATES = 10;
+
         /// <summary>Port: the texture quality names, Low to High (Constants.TEXTURE_SIDES).</summary>
         private static readonly string[] TEXTURE_NAMES = { "Low", "Medium", "High" };
 
@@ -79,6 +82,10 @@ namespace Sexy
 
         public Switch mSubmitByDraggingSwitch;
 
+        public LabelWidget mCheckForUpdatesLabel;
+
+        public Switch mCheckForUpdatesSwitch;
+
         public LabelWidget mTexturesLabel;
 
         public BarButton mTexturesButton;
@@ -116,10 +123,14 @@ namespace Sexy
             SizeUnderline(mLanguageLink);
             AddWidget(mLanguageLink);
             mPageLink = MakeLink(LINK_PAGE, Res.FONT_DEFINITIONS_SMALL, new Color(0, 0, 0, 255), new Color(0, 0x5c, 0x09, 255));
+            WidenTouchArea(mLanguageLink);
+            WidenTouchArea(mPageLink);
             mLandscapeBooksLabel = MakeLabel("");
             mLandscapeBooksSwitch = MakeSwitch(SWITCH_LANDSCAPE_BOOKS);
             mSubmitByDraggingLabel = MakeLabel("");
             mSubmitByDraggingSwitch = MakeSwitch(SWITCH_SUBMIT_BY_DRAGGING);
+            mCheckForUpdatesLabel = MakeLabel("");
+            mCheckForUpdatesSwitch = MakeSwitch(SWITCH_CHECK_FOR_UPDATES);
             mTexturesLabel = MakeLabel("");
             mTexturesButton = new BarButton(LINK_TEXTURES, this, theApp, AtlasResourceBase.IMAGE_GROUP11_03);
             mTexturesButton.SetFont(Res.FONT_COOPER_OUTLINED);
@@ -150,8 +161,9 @@ namespace Sexy
             SizeLink(mLanguageLink);
             SetLabel(mLandscapeBooksLabel, "Landscape Books");
             SetLabel(mSubmitByDraggingLabel, "Submit by Dragging");
+            SetLabel(mCheckForUpdatesLabel, "Check for Updates");
             // Port: the switches' ON / OFF art is English; translated, their names are drawn as text.
-            foreach (Switch aSwitch in new[] { mHintsSwitch, mDefinitionsSwitch, mConfirmScrambleSwitch, mLandscapeBooksSwitch, mSubmitByDraggingSwitch })
+            foreach (Switch aSwitch in new[] { mHintsSwitch, mDefinitionsSwitch, mConfirmScrambleSwitch, mLandscapeBooksSwitch, mSubmitByDraggingSwitch, mCheckForUpdatesSwitch })
             {
                 aSwitch.mOnText = Localization.IsSpanish ? "SÍ" : null;
                 aSwitch.mOffText = Localization.IsSpanish ? "NO" : null;
@@ -177,6 +189,20 @@ namespace Sexy
             theLink.mUnderlineOffset = aStep;
             // The underline reaches below the font's height: not clipped by the link's rect.
             theLink.mClip = false;
+        }
+
+        /// <summary>
+        /// Port: the small links are hard to hit with a finger: they take clicks a font height to each side and
+        /// three quarters of one above and below their text (negative mouse insets reach past the widget's rect).
+        /// </summary>
+        private static void WidenTouchArea(HyperlinkWidget theLink)
+        {
+            int aHeight = theLink.mFont.GetHeight();
+            int aVertical = aHeight * 3 / 4;
+            theLink.mMouseInsets.mLeft = -aHeight;
+            theLink.mMouseInsets.mRight = -aHeight;
+            theLink.mMouseInsets.mTop = -aVertical;
+            theLink.mMouseInsets.mBottom = -aVertical;
         }
 
         private static void SizeLink(HyperlinkWidget theLink)
@@ -245,6 +271,7 @@ namespace Sexy
             mConfirmScrambleSwitch.SetOn(mApp.mConfirmScramble, false);
             mLandscapeBooksSwitch.SetOn(mApp.mLandscapeBooks, false);
             mSubmitByDraggingSwitch.SetOn(mApp.mSubmitByDragging, false);
+            mCheckForUpdatesSwitch.SetOn(mApp.mCheckForUpdates, false);
             mHintsOnCount = 0;
             mExtraPage = false;
             SetTexts();
@@ -298,11 +325,14 @@ namespace Sexy
                 mSubmitByDraggingSwitch.Layout(0x6000, mSfxLabel, 0, 0, 0, 0);
             }
             mSubmitByDraggingLabel.Layout(0x200800, mSubmitByDraggingSwitch, -aPad, 0, 0, 0);
-            mTexturesButton.Layout(0x2200, mSubmitByDraggingSwitch, 0, aGap, 0, 0);
+            mCheckForUpdatesSwitch.Layout(0x2200, mSubmitByDraggingSwitch, 0, aGap, 0, 0);
+            mCheckForUpdatesLabel.Layout(0x200800, mCheckForUpdatesSwitch, -aPad, 0, 0, 0);
+            mTexturesButton.Layout(0x2200, mCheckForUpdatesSwitch, 0, aGap, 0, 0);
             mTexturesLabel.Layout(0x200800, mTexturesButton, -aPad, 0, 0, 0);
             mRestartLabel.Layout(0x2200, mTexturesButton, 0, aGap, 0, 0);
             mLandscapeBooksLabel.mJustifyH = 1;
             mSubmitByDraggingLabel.mJustifyH = 1;
+            mCheckForUpdatesLabel.mJustifyH = 1;
             mTexturesLabel.mJustifyH = 1;
             // One page at a time.
             bool aMain = !mExtraPage;
@@ -320,6 +350,8 @@ namespace Sexy
             mLandscapeBooksSwitch.SetVisible(mExtraPage && aLandscapeBooks);
             mSubmitByDraggingLabel.SetVisible(mExtraPage);
             mSubmitByDraggingSwitch.SetVisible(mExtraPage);
+            mCheckForUpdatesLabel.SetVisible(mExtraPage);
+            mCheckForUpdatesSwitch.SetVisible(mExtraPage);
             mTexturesLabel.SetVisible(mExtraPage);
             mTexturesButton.SetVisible(mExtraPage);
             mRestartLabel.SetVisible(mExtraPage && mTextureSide != Constants.TextureSide);
@@ -409,6 +441,14 @@ namespace Sexy
             case SWITCH_SUBMIT_BY_DRAGGING:
                 mApp.mSubmitByDragging = theOn;
                 break;
+            case SWITCH_CHECK_FOR_UPDATES:
+                mApp.mCheckForUpdates = theOn;
+                // Turned on, the check runs now (once per launch); the prompt waits for the main menu.
+                if (theOn)
+                {
+                    UpdateChecker.Start();
+                }
+                break;
             default:
                 return;
             }
@@ -440,6 +480,11 @@ namespace Sexy
             }
             mApp.PlaySound(Res.SOUND_BUTTON_CLICK);
             mApp.ChangeLanguage();
+            // Port: Lex's "OPTIONS!" balloon says it again in the new language (fading the old text out).
+            if (mApp.mWordBalloon.GetMode() == WordBalloon.MODE_EXCLAIM)
+            {
+                mApp.mWordBalloon.Say(SexyAppBase.Loc("OPTIONS!"));
+            }
             SetTexts();
             LayoutControls();
             MarkDirty();

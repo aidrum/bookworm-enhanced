@@ -1,0 +1,485 @@
+# Builds every platform (Android, iOS, macOS, Linux, Windows), then publishes them as a GitHub release
+# and updates the AltStore / SideStore source on GitHub Pages. Bookworm is one universal app (every
+# resource set ships, picked from the screen at run time), so each platform gets a single build.
+#
+#   Pushes to main, manual runs (Actions > Build > Run workflow) and version tags publish a release,
+#   titled with its tag:
+#     main / manual run -> pre-release "<Version>-prerelease+<run number>" (1.1-prerelease+17), once
+#                          every platform is built, with generated release notes
+#     version tag (1.2) -> full release of that tag. Each platform's files are added as soon as they're
+#                          built. The release is created (as the latest release) if it doesn't exist yet;
+#                          an existing release's title and notes are left as they are (apart from the
+#                          hidden bookworm-build line, added if missing), so notes can be written by hand,
+#                          before or after.
+#   A version tag on a commit that already has a pre-release reuses that pre-release's files instead of
+#   building them again (it waits for the commit's main build if that's still running): same source and
+#   workflow, so they'd only differ by the build number.
+#   Automatic builds are never the latest release: that stays the last tagged release.
+#   Pull requests only build (files under the run's Artifacts). Other branches build through their pull
+#   request or a manual run, not on every push, so a branch with an open PR isn't built twice: macOS
+#   runners are scarce, and a job that waits too long for one is cancelled.
+#
+# One-time setup:
+#   - Pages: Settings > Pages > Source: "GitHub Actions" (until then the pages job just warns).
+#   - Android signing key (optional): the repository secrets ANDROID_KEYSTORE_BASE64 (the keystore,
+#     base64), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD (defaults to the
+#     keystore password). Without them each run signs with a throwaway debug key.
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['[0-9]*', '!*-prerelease*']
+    paths-ignore: ['**.md']
+  pull_request:
+    paths-ignore: ['**.md']
+
+concurrency:
+  # Every main build becomes a release, so those never cancel each other; elsewhere only the newest
+  # push matters.
+  group: build-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  # The build number: the Android versionCode and iOS CFBundleVersion, and the last part of the version
+  # (<Version>.<n>, distribution/app_info.sh), so every build installs as an update, including through
+  # AltStore / SideStore.
+  BUILD_NUMBER: ${{ github.run_number }}
+  # Appended to <Version> by port_version: automatic builds are <Version>.<n>, a version tag's build is
+  # exactly <Version>.
+  VERSION_SUFFIX: ${{ !startsWith(github.ref, 'refs/tags/') && format('.{0}', github.run_number) || '' }}
+
+jobs:
+  # What this run publishes: release is "prerelease", "release" (a version tag) or empty (pull requests),
+  # tag is the release's tag, notes the hidden line for make_source.py, and copy_from the pre-release
+  # whose files a version tag reuses (then nothing is built).
+  prepare:
+    name: Plan the release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      tag: ${{ steps.plan.outputs.tag }}
+      notes: ${{ steps.plan.outputs.notes }}
+      copy_from: ${{ steps.plan.outputs.copy_from }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Plan
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PUBLISH: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') }}
+        run: |
+          set -euo pipefail
+          source distribution/app_info.sh
+          if [ "$PUBLISH" != true ]; then echo "Nothing is published."; exit 0; fi
+          # The IPA's CFBundleShortVersionString and CFBundleVersion, which AltStore / SideStore
+          # compare with the source's.
+          NOTES="<!-- bookworm-build version=$(port_version) build=$BUILD_NUMBER -->"
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            { echo "release=prerelease"; echo "tag=$(VERSION_SUFFIX= port_version)-prerelease+$BUILD_NUMBER"; echo "notes=$NOTES"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          { echo "release=release"; echo "tag=$GITHUB_REF_NAME"; } >> "$GITHUB_OUTPUT"
+
+          # A main build of this commit that's still running will publish its pre-release: wait for it.
+          RUN="$(gh run list --workflow build.yml --branch main --commit "$GITHUB_SHA" --json databaseId,status \
+            --jq '[.[] | select(.status != "completed")][0].databaseId // empty')"
+          if [ -n "$RUN" ]; then
+            echo "Waiting for this commit's main build (run $RUN)..."
+            gh run watch "$RUN" --interval 30 > /dev/null || true
+          fi
+          # A pre-release only exists once every platform built, so it has all the files.
+          FROM="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq "[.[] | select(.prerelease and (.draft | not)
+            and .target_commitish == \"$GITHUB_SHA\" and (.tag_name | contains(\"-prerelease+\")))][0].tag_name // empty")"
+          if [ -n "$FROM" ]; then
+            echo "Reusing the files of $FROM, built from the same commit."
+            # Its files' versions, not this run's.
+            NOTES="$(gh release view "$FROM" --json body --jq .body | grep -o '<!-- bookworm-build [^>]*-->' || true)"
+            echo "copy_from=$FROM" >> "$GITHUB_OUTPUT"
+          fi
+          echo "notes=$NOTES" >> "$GITHUB_OUTPUT"
+
+  android:
+    name: Android
+    needs: prepare
+    if: needs.prepare.outputs.copy_from == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PACKAGE: com.aidrum.bookworm
+      APK: Bookworm-android.apk
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install the Android workload and SDK packages
+        run: |
+          # A private SDK folder (the runner's preinstalled one may not be writable or have API 36).
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+          export ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$ANDROID_SDK_ROOT"
+          dotnet workload install android
+          dotnet build Bookworm.Android -t:InstallAndroidDependencies -f net10.0-android \
+            -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT" -p:JavaSdkDirectory="$JAVA_HOME" -p:AcceptAndroidSDKLicenses=True
+
+      # Without the ANDROID_KEYSTORE_* secrets each run signs with a throwaway debug key.
+      - name: Set up the signing key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/bookworm.keystore"
+            echo "args=-p:AndroidKeyStore=true -p:AndroidSigningKeyStore=$RUNNER_TEMP/bookworm.keystore -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD -p:AndroidSigningKeyAlias=$ANDROID_KEY_ALIAS -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD" >> "$GITHUB_OUTPUT"
+            echo "Signing with the repository's keystore."
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: signing with a throwaway debug key (see the notes at the top of build.yml)."
+          fi
+
+      - name: Build (Release)
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          source distribution/app_info.sh
+          dotnet build Bookworm.Android -c Release \
+            -p:ApplicationVersion=$BUILD_NUMBER -p:ApplicationDisplayVersion="$(port_version)" \
+            -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT" -p:JavaSdkDirectory="$JAVA_HOME" \
+            ${{ steps.key.outputs.args }}
+
+      # The build also leaves an unsigned <package>.apk, which Android refuses to install.
+      - name: Pick the signed APK and verify it
+        run: |
+          set -euo pipefail
+          SIGNED="$(find Bookworm.Android/bin -name "$PACKAGE-Signed.apk" | head -n1)"
+          if [ -z "$SIGNED" ]; then echo "No signed APK found" >&2; exit 1; fi
+          cp "$SIGNED" "$APK"
+          BT="$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -n1)"
+          "$BT/apksigner" verify --verbose --print-certs "$APK" | grep -E "Verifie|SHA-256 digest|certificate DN"
+          # Android 15+ devices with 16 KB pages need the uncompressed native libraries 16 KB aligned.
+          "$BT/zipalign" -c -P 16 4 "$APK" > /dev/null && echo "zipalign (16 KB pages): OK"
+          ls -lh "$APK"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: ${{ env.APK }}
+          path: ${{ env.APK }}
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+  # Everything that needs a Mac (iOS and macOS) in one job, on an Intel runner: GitHub's
+  # Apple Silicon (arm64) runners are often out of capacity, and a job that isn't given one in 15 minutes
+  # is cancelled. One job means one runner to wait for; the macOS apps are cross-compiled for both CPUs.
+  apple:
+    name: iOS and macOS
+    needs: prepare
+    if: needs.prepare.outputs.copy_from == ''
+    runs-on: macos-15-intel
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+
+      # The .NET iOS workload needs a recent Xcode; the project pins the iOS 26.0 bindings so any
+      # Xcode 26.x or later works.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install the iOS workload
+        run: dotnet workload install ios
+
+      # Unsigned: sideloading tools (AltStore, SideStore, Sideloadly, TrollStore) sign the app on install.
+      - name: Build the unsigned IPA
+        run: |
+          set -euo pipefail
+          source distribution/app_info.sh
+          mkdir -p dist
+          dotnet build Bookworm.iOS/Bookworm.iOS.csproj -c Release -r ios-arm64 \
+            -p:ApplicationVersion=$BUILD_NUMBER -p:ApplicationDisplayVersion="$VERSION" \
+            -p:EnableCodeSigning=false -p:CodesignRequireProvisioningProfile=false \
+            -p:BuildIpa=false -p:ValidateXcodeVersion=false
+          BIN=Bookworm.iOS/bin/Release
+          APP="$(find "$BIN" -type d -name '*.app' -path '*ios-arm64*' | head -n1)"
+          if [ -z "$APP" ]; then echo "No .app found under $BIN" >&2; exit 1; fi
+          echo "$APP"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" "$APP/Info.plist"
+          rm -rf ipa && mkdir -p ipa/Payload
+          cp -R "$APP" ipa/Payload/
+          rm -rf ipa/Payload/*.app/_CodeSignature ipa/Payload/*.app/embedded.mobileprovision
+          (cd ipa && zip -qry "../dist/$EXE-unsigned.ipa" Payload)
+          ls -lh dist
+
+      - name: Build the macOS apps for Intel and Apple Silicon (ad-hoc signed, zipped)
+        run: |
+          set -euo pipefail
+          for RID in osx-x64 osx-arm64; do
+            bash distribution/build_macos.sh "$RID"
+          done
+          mv distribution/out/*.zip dist/
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: Apple
+          path: dist/*
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+  linux:
+    name: Linux
+    needs: prepare
+    if: needs.prepare.outputs.copy_from == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Runs appimagetool (itself an AppImage) without FUSE.
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Get appimagetool
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/appimagetool" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          echo "APPIMAGETOOL=$RUNNER_TEMP/appimagetool" >> "$GITHUB_ENV"
+
+      - name: Build .tar.gz and AppImage
+        run: bash distribution/build_linux.sh
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: Linux
+          path: |
+            distribution/out/*.tar.gz
+            distribution/out/*.AppImage
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+  windows:
+    name: Windows
+    needs: prepare
+    if: needs.prepare.outputs.copy_from == ''
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      NAME: Bookworm
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      # The repo's own NativeAOT publish (finds Visual Studio's C++ tools through vswhere).
+      - name: Publish (NativeAOT, win-x64)
+        shell: cmd
+        run: call distribution\publish_windows.bat
+
+      - name: Zip
+        shell: pwsh
+        run: |
+          $dir = "Bookworm.Desktop\bin\Publish\${env:NAME}"
+          if (-not (Test-Path "$dir\${env:NAME}.exe")) { throw "No ${env:NAME}.exe in $dir" }
+          Remove-Item "$dir\*.pdb" -ErrorAction SilentlyContinue
+          Compress-Archive -Path $dir -DestinationPath "${env:NAME}-windows-x64.zip"
+          Get-Item "${env:NAME}-windows-x64.zip" | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: ${{ env.NAME }}-windows-x64
+          path: ${{ env.NAME }}-windows-x64.zip
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+  # Pre-releases: published once every platform is built, with generated release notes.
+  release:
+    name: Publish pre-release
+    needs: [prepare, android, apple, linux, windows]
+    if: needs.prepare.outputs.release == 'prerelease'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - run: ls -lh dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.tag }}
+          body: ${{ needs.prepare.outputs.notes }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: dist/*
+
+  # Full releases: each platform's files are added as soon as its build is done
+  # (distribution/release_upload.sh), so the slow Apple build doesn't hold up the others.
+  release-android:
+    name: Add Android to the release
+    needs: [prepare, android]
+    if: needs.prepare.outputs.release == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ARTIFACTS: '*-android.apk'
+    steps: &add-to-release
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: ${{ env.ARTIFACTS }}
+          merge-multiple: true
+
+      - name: Add the files to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          NOTES: ${{ needs.prepare.outputs.notes }}
+        run: bash distribution/release_upload.sh dist/*
+
+  release-apple:
+    name: Add iOS and macOS to the release
+    needs: [prepare, apple]
+    if: needs.prepare.outputs.release == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ARTIFACTS: Apple
+    steps: *add-to-release
+
+  release-linux:
+    name: Add Linux to the release
+    needs: [prepare, linux]
+    if: needs.prepare.outputs.release == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ARTIFACTS: Linux
+    steps: *add-to-release
+
+  release-windows:
+    name: Add Windows to the release
+    needs: [prepare, windows]
+    if: needs.prepare.outputs.release == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ARTIFACTS: '*-windows-x64'
+    steps: *add-to-release
+
+  # A full release of a commit that already has a pre-release: its files, instead of new builds.
+  release-copy:
+    name: Add the pre-release's files to the release
+    needs: prepare
+    if: needs.prepare.outputs.copy_from != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      FROM: ${{ needs.prepare.outputs.copy_from }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download ${{ needs.prepare.outputs.copy_from }}'s files
+        run: gh release download "$FROM" --dir dist
+
+      - name: Add them to the release
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          NOTES: ${{ needs.prepare.outputs.notes }}
+        run: bash distribution/release_upload.sh dist/*
+
+  pages:
+    name: AltStore / SideStore source (GitHub Pages)
+    needs: release
+    # The github-pages environment only accepts deployments from the default branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check that Pages is set up
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TYPE="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .build_type 2>/dev/null || true)"
+          if [ "$TYPE" = "workflow" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::GitHub Pages isn't set to deploy from GitHub Actions (Settings > Pages > Source: GitHub Actions), so the AltStore/SideStore source wasn't updated."
+          fi
+
+      - name: Build the source from the releases
+        if: steps.check.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$RUNNER_TEMP/releases.json"
+          python3 distribution/altstore/make_source.py --repo "$GITHUB_REPOSITORY" --releases "$RUNNER_TEMP/releases.json" --out site/ios
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.check.outputs.ok == 'true'
+        with:
+          path: site
+
+      - uses: actions/deploy-pages@v4
+        if: steps.check.outputs.ok == 'true'
+        id: deploy

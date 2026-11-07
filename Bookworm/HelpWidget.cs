@@ -20,7 +20,7 @@ namespace Sexy
             "Shake your device to scramble all of your tiles!",
             "Turn your device to see the Bonus Book List! Can you spell them all?",
             "Credits: (n.) Acknowledgement and praise for the awesome creators of Lex!",
-            "Update (n): The act or an instance of bringing something up to date. Now with iPad support!",
+            "Update (n): The act or an instance of bringing something up to date. Now with 64-bit support!",
             "Original (adj): Preceding all others in time; first. There's nothing quite like Bookworm!",
             "Lex: (n.) Me! The best-spelling worm of all time!"
         };

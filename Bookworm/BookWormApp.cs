@@ -177,6 +177,10 @@ namespace Sexy
                 break;
             }
             LoadSettings();
+            if (mCheckForUpdates)
+            {
+                UpdateChecker.Start();
+            }
             mResourceManager.ParseResourcesFile(aManifest);
             // The original also creates two helpers here (0xdd0, FUN_000232cc), not ported yet.
             mPersonalBests = new PersonalBests(this);
@@ -464,7 +468,14 @@ namespace Sexy
             RegistryWriteInteger("MusicVolume", (int)(GetMusicVolume() * 100));
             RegistryWriteBoolean("LandscapeBooks", mLandscapeBooks);
             RegistryWriteBoolean("SubmitByDragging", mSubmitByDragging);
+            RegistryWriteBoolean("CheckForUpdates", mCheckForUpdates);
         }
+
+        /// <summary>
+        /// Port addition (the extra options): looks for a newer Bookworm Enhanced release on GitHub at launch
+        /// (UpdateChecker) and offers it on the main menu.
+        /// </summary>
+        public bool mCheckForUpdates = true;
 
         /// <summary>
         /// Port addition (the extra options, "Submit by Dragging", the PC version's name for it): a touch that
@@ -490,6 +501,7 @@ namespace Sexy
             RegistryReadBoolean("ConfirmScramble", ref mConfirmScramble);
             RegistryReadBoolean("LandscapeBooks", ref mLandscapeBooks);
             RegistryReadBoolean("SubmitByDragging", ref mSubmitByDragging);
+            RegistryReadBoolean("CheckForUpdates", ref mCheckForUpdates);
             int aVolume = 0;
             if (RegistryReadInteger("SfxVolume", ref aVolume))
             {
@@ -499,6 +511,72 @@ namespace Sexy
             {
                 SetMusicVolume(aVolume / 100.0);
             }
+        }
+
+        /// <summary>Port addition: the update prompt's dialog id and its Download button (UpdateChecker).</summary>
+        public const int DIALOG_UPDATE_AVAILABLE = 0x7550;
+
+        private const int BUTTON_UPDATE_DOWNLOAD = 1;
+
+        private const int BUTTON_UPDATE_CANCEL = 2;
+
+        /// <summary>Port addition: the release page of the update the prompt offers.</summary>
+        private string mUpdateUrl = UpdateChecker.RELEASES_PAGE_URL;
+
+        /// <summary>Port addition: updates the main menu has been settled for (the update prompt waits a second).</summary>
+        private int mMenuSettledTicks;
+
+        public override void UpdateFrames()
+        {
+            base.UpdateFrames();
+            if (UpdateChecker.HasUpdate)
+            {
+                CheckUpdatePrompt();
+            }
+        }
+
+        /// <summary>
+        /// Port addition: shows the update prompt (UpdateChecker found a newer release) once the main menu is
+        /// settled: loaded, nothing moving, no other dialog up, and it has been so for a second. Turned off in
+        /// the meantime, it isn't shown.
+        /// </summary>
+        private void CheckUpdatePrompt()
+        {
+            if (!mCheckForUpdates)
+            {
+                UpdateChecker.TakeUpdate(out _, out _);
+                return;
+            }
+            if (!mLoadingDone || mInterfaceState != 2 || mInterfaceLock != 0 || mWidgetManager.mBaseModalWidget != null)
+            {
+                mMenuSettledTicks = 0;
+                return;
+            }
+            if (++mMenuSettledTicks < 100 || !UpdateChecker.TakeUpdate(out string aNewVersion, out mUpdateUrl))
+            {
+                return;
+            }
+            Alert anAlert = new Alert(DIALOG_UPDATE_AVAILABLE, this, this);
+            anAlert.SetTitle(Loc("Update Available"));
+            anAlert.SetMessage(Loc("A new version of Bookworm Enhanced is available!") + "\n\n" +
+                Loc("Current version: ") + mVersion + "\n" + Loc("New version: ") + aNewVersion);
+            anAlert.AddGreenButton(BUTTON_UPDATE_DOWNLOAD, Loc("Download"));
+            anAlert.AddRedButton(BUTTON_UPDATE_CANCEL, Loc("Cancel"));
+            anAlert.Show();
+        }
+
+        /// <summary>Port addition: Download opens the release page; either button closes the prompt.</summary>
+        public override void DialogButtonDepress(int theDialogId, int theButtonId)
+        {
+            if (theDialogId == DIALOG_UPDATE_AVAILABLE)
+            {
+                if (theButtonId == BUTTON_UPDATE_DOWNLOAD)
+                {
+                    OpenURL(mUpdateUrl);
+                }
+                return;
+            }
+            base.DialogButtonDepress(theDialogId, theButtonId);
         }
 
         public Board mBoard; // 0xdb8
