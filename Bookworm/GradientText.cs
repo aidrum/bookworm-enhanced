@@ -20,6 +20,143 @@ namespace Sexy
         /// </summary>
         public static void Draw(Graphics g, Font theFont, string[] theLines, int theCenterX, int theFirstBaseline, Color theTop, Color theBottom, Color? theOutline = null, int theLineSpacing = 0, float theScale = 1f)
         {
+            // Inside another offscreen render the cache cannot be built (switching targets would lose that one).
+            if (Graphics.IsOffscreen)
+            {
+                DrawDirect(g, theFont, theLines, theCenterX, theFirstBaseline, theTop, theBottom, theOutline, theLineSpacing, theScale);
+                return;
+            }
+            int aLineHeight = theLineSpacing > 0 ? theLineSpacing : theFont.GetLineSpacing();
+            CacheKey aKey = new CacheKey(theFont, string.Join("\n", theLines), theTop, theBottom, theOutline, aLineHeight);
+            if (!sCache.TryGetValue(aKey, out CacheEntry anEntry) || anEntry.mImage.RenderTarget.IsContentLost)
+            {
+                anEntry?.mImage.Dispose();
+                anEntry = Build(theFont, theLines, theTop, theBottom, theOutline, aLineHeight);
+                sCache[aKey] = anEntry;
+            }
+            MemoryImage anImage = anEntry.mImage;
+            // The image's corner, scaled about (theCenterX, theFirstBaseline) as the direct drawing is.
+            int aLeft = theCenterX + (int)System.Math.Round(anEntry.mLeft * theScale);
+            int aTop = theFirstBaseline + (int)System.Math.Round(anEntry.mTop * theScale);
+            int aRight = theCenterX + (int)System.Math.Round((anEntry.mLeft + anImage.mWidth) * theScale);
+            int aBottom = theFirstBaseline + (int)System.Math.Round((anEntry.mTop + anImage.mHeight) * theScale);
+            // The colours are baked in; the direct drawing ignored the caller's colour too.
+            bool aColorize = g.GetColorizeImages();
+            g.SetColorizeImages(false);
+            g.DrawImage(anImage, new TRect(aLeft, aTop, aRight - aLeft, aBottom - aTop), new TRect(0, 0, anImage.mWidth, anImage.mHeight));
+            g.SetColorizeImages(aColorize);
+        }
+
+        /// <summary>
+        /// Port (performance): each title drawn once into an image, then blitted. Drawn directly it takes some 35
+        /// string draws per line (the shadow's 9 copies, then a band every few pixels), every frame.
+        /// </summary>
+        private readonly struct CacheKey : System.IEquatable<CacheKey>
+        {
+            private readonly Font mFont;
+            private readonly string mText;
+            private readonly Color mTop;
+            private readonly Color mBottom;
+            private readonly Color? mOutline;
+            private readonly int mLineHeight;
+
+            public CacheKey(Font theFont, string theText, Color theTop, Color theBottom, Color? theOutline, int theLineHeight)
+            {
+                mFont = theFont;
+                mText = theText;
+                mTop = theTop;
+                mBottom = theBottom;
+                mOutline = theOutline;
+                mLineHeight = theLineHeight;
+            }
+
+            public bool Equals(CacheKey theOther)
+            {
+                return ReferenceEquals(mFont, theOther.mFont) && mText == theOther.mText && mTop == theOther.mTop && mBottom == theOther.mBottom
+                    && mOutline == theOther.mOutline && mLineHeight == theOther.mLineHeight;
+            }
+
+            public override bool Equals(object theObject)
+            {
+                return theObject is CacheKey aKey && Equals(aKey);
+            }
+
+            public override int GetHashCode()
+            {
+                return System.HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(mFont), mText, mTop, mBottom, mOutline, mLineHeight);
+            }
+        }
+
+        /// <summary>A cached title: its image, and the image's corner against (centre x, first baseline).</summary>
+        private sealed class CacheEntry
+        {
+            public MemoryImage mImage;
+            public int mLeft;
+            public int mTop;
+        }
+
+        /// <summary>More than this many titles (a language switch, many screens visited): all are dropped.</summary>
+        private const int CACHE_LIMIT = 48;
+
+        private static readonly System.Collections.Generic.Dictionary<CacheKey, CacheEntry> sCache =
+            new System.Collections.Generic.Dictionary<CacheKey, CacheEntry>();
+
+        private static bool sResetHooked;
+
+        private static void ClearCache()
+        {
+            foreach (CacheEntry anEntry in sCache.Values)
+            {
+                anEntry.mImage.Dispose();
+            }
+            sCache.Clear();
+        }
+
+        /// <summary>Draws the title unscaled into a new image, sized to hold its shadow and its outline's glow.</summary>
+        private static CacheEntry Build(Font theFont, string[] theLines, Color theTop, Color theBottom, Color? theOutline, int theLineHeight)
+        {
+            if (!sResetHooked)
+            {
+                // The render targets' contents are lost with the device (an Android app sent to the background).
+                Microsoft.Xna.Framework.Graphics.GraphicsDevice aDevice = GlobalStaticVars.g.GraphicsDevice;
+                aDevice.DeviceResetting += (theSender, theArgs) => ClearCache();
+                aDevice.DeviceReset += (theSender, theArgs) => ClearCache();
+                sResetHooked = true;
+            }
+            if (sCache.Count >= CACHE_LIMIT)
+            {
+                ClearCache();
+            }
+            int anAscent = theFont.GetAscent();
+            int aDescent = System.Math.Max(0, theFont.GetHeight() - anAscent) + anAscent / 4;
+            int aUnit = System.Math.Max(1, anAscent / 14);
+            int aPad = anAscent / 2;
+            int aLeft = 0;
+            int aRight = 0;
+            foreach (string aLine in theLines)
+            {
+                int aWidth = theFont.StringWidth(aLine);
+                aLeft = System.Math.Min(aLeft, -(aWidth / 2));
+                aRight = System.Math.Max(aRight, aWidth - aWidth / 2);
+            }
+            aLeft -= aPad;
+            aRight += 2 * aUnit + aPad;
+            // The bands start 1.5 ascents above each baseline; the shadow reaches 3 units below the last band.
+            int aTop = -anAscent * 3 / 2;
+            int aBottom = (theLines.Length - 1) * theLineHeight + aDescent + 4 * aUnit + aPad;
+            CacheEntry anEntry = new CacheEntry { mImage = new MemoryImage(), mLeft = aLeft, mTop = aTop };
+            anEntry.mImage.Create(aRight - aLeft, aBottom - aTop);
+            Graphics aG = Graphics.GetNew(anEntry.mImage);
+            aG.Clear(Color.Transparent);
+            DrawDirect(aG, theFont, theLines, -aLeft, -aTop, theTop, theBottom, theOutline, theLineHeight, 1f);
+            aG.SetRenderTarget(null);
+            aG.PrepareForReuse();
+            return anEntry;
+        }
+
+        /// <summary>Draw, every string drawn each time (the cache's contents, and drawing inside an offscreen render).</summary>
+        private static void DrawDirect(Graphics g, Font theFont, string[] theLines, int theCenterX, int theFirstBaseline, Color theTop, Color theBottom, Color? theOutline, int theLineSpacing, float theScale)
+        {
             bool aScaled = theScale != 1f;
             if (aScaled)
             {

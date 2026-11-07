@@ -188,6 +188,9 @@ namespace Sexy
         // Set while drawing into a render target rather than the back buffer.
         private static bool sOffscreen;
 
+        /// <summary>Port: whether drawing currently goes into a render target rather than the back buffer.</summary>
+        public static bool IsOffscreen => Graphics.sOffscreen;
+
         /// <summary>
         /// Selects normal or additive blending. On the back buffer the device always stays on premultiplied
         /// alpha blending (One, InvSrcAlpha) and additive draws get vertex alpha 0 instead, which gives the
