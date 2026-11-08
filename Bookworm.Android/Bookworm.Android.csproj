@@ -40,6 +40,7 @@
     <TrimmerRootAssembly Include="MonoGame.Framework" RootMode="All" />
     <TrimmerRootAssembly Include="NVorbis" RootMode="All" />
   </ItemGroup>
+  <Import Project="signing.local.props" Condition="Exists('signing.local.props')" />
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.Android" Version="3.8.4.1" />
   </ItemGroup>

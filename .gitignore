@@ -9,3 +9,4 @@ obj/
 /distribution/out/
 /tools
 .idea/
+/Bookworm.Android/signing.local.props
