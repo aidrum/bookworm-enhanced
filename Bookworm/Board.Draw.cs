@@ -294,6 +294,8 @@ namespace Sexy
                 g.DrawImage(AtlasResourceBase.IMAGE_GROUP4_09, mSubmitArrowX - mApp.mScreenPos.At(0x1d8), mSubmitArrowY - mApp.mScreenPos.At(0x1dc));
                 g.SetColorizeImages(false);
             }
+            // Port addition: the keyboard/controller selector (Board.Selector.cs).
+            DrawSelector(g);
         }
 
         /// <summary>FUN_0000f4a0: the additive glow (IMAGE_GROUP51_08) of the sapphire and diamond tiles selected or not.</summary>

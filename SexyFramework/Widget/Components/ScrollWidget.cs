@@ -80,6 +80,22 @@ namespace Sexy
             }
         }
 
+        /// <summary>Port addition (keyboard/controller): scrolls by (dx, dy) from where it is heading, within its range.</summary>
+        public void ScrollBy(float dx, float dy, bool animated = true)
+        {
+            CGPoint aFrom = mSeekScrollTarget ? mScrollTarget : mScrollOffset;
+            if (!animated)
+            {
+                mSeekScrollTarget = false;
+            }
+            SetScrollOffset(new CGPoint
+            {
+                x = Math.Max(Math.Min(mScrollMin.x, mScrollMax.x), Math.Min(mScrollMax.x, aFrom.x + dx)),
+                y = Math.Max(Math.Min(mScrollMin.y, mScrollMax.y), Math.Min(mScrollMax.y, aFrom.y + dy))
+            }, animated);
+            FlashIndicators();
+        }
+
         public void ScrollRectIntoView(TRect rect, bool animated)
         {
             if (!mIsDown)

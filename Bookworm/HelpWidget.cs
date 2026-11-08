@@ -197,6 +197,19 @@ namespace Sexy
             mApp.mWordBalloon.Hide();
         }
 
+        /// <summary>Port addition (keyboard/controller): turns theDelta pages, as a swipe would.</summary>
+        public void TurnPage(int theDelta)
+        {
+            int aPage = System.Math.Max(0, System.Math.Min(PAGE_COUNT - 1, mScroll.GetPageHorizontal() + theDelta));
+            if (aPage == mScroll.GetPageHorizontal())
+            {
+                return;
+            }
+            mScroll.SetPageHorizontal(aPage, true);
+            mPageControl.SetCurrentPage(mScroll.GetPageHorizontal());
+            mApp.mWordBalloon.Hide();
+        }
+
         public void ButtonDownTick(int theId)
         {
         }

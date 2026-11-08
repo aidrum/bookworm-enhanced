@@ -577,6 +577,7 @@ namespace Sexy
             int my = (int)mouse.y;
             if (previousMouseState.Position != msstate.Position)
             {
+                app.PointerInputUsed();
                 app.mWidgetManager.MouseMove(mx, my);
             }
             if (msstate.LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released)
@@ -587,6 +588,7 @@ namespace Sexy
                 {
                     mMouseClickCount = mTapCount = 1;
                 }
+                app.PointerInputUsed();
                 app.mWidgetManager.MouseDown(mx, my, mMouseClickCount);
             }
             else if (msstate.LeftButton == ButtonState.Released && previousMouseState.LeftButton == ButtonState.Pressed)
@@ -616,12 +618,16 @@ namespace Sexy
             }
             GamePadState pad = GamePad.GetState(PlayerIndex.One);
             KeyboardState keys = Keyboard.GetState();
+            // Port addition (controller): Start works as Back too.
             if ((pad.Buttons.Back == ButtonState.Pressed && previousGamepadState.Buttons.Back == ButtonState.Released) ||
+                (pad.Buttons.Start == ButtonState.Pressed && previousGamepadState.Buttons.Start == ButtonState.Released) ||
                 (keys.IsKeyDown(Keys.Escape) && previousKeyboardState.IsKeyUp(Keys.Escape)) || BackRequested)
             {
                 BackRequested = false;
                 app.BackButtonPress();
             }
+            // Port addition (controller): the game's turn with the pad (the board's selector).
+            app.GamePadUpdate(pad, previousGamepadState);
             while (AccelerometerSamples.TryDequeue(out double[] aSample))
             {
                 app.AccelerometerDidAccelerate(aSample[0], aSample[1], aSample[2], aSample[3]);
@@ -648,6 +654,7 @@ namespace Sexy
                 touch.tapCount = mTouchTapCount;
                 if (touchLocation.State == TouchLocationState.Pressed && !began)
                 {
+                    app.PointerInputUsed();
                     app.TouchBegan(touch);
                     began = true;
                 }

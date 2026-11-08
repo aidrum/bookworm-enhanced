@@ -92,17 +92,6 @@ namespace Sexy
             aSheet.Show();
         }
 
-        /// <summary>Port: the desktop has no shake, so the space bar asks for a scramble.</summary>
-        public override void KeyDown(KeyCode theKey)
-        {
-            if (theKey == KeyCode.Space)
-            {
-                RequestScramble();
-                return;
-            }
-            base.KeyDown(theKey);
-        }
-
         /// <summary>FUN_00007930: the "Can't Scramble!" alert (dialog 1) with an OK.</summary>
         private void ShowCantScramble(string theReason)
         {

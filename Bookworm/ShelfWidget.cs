@@ -43,6 +43,12 @@ namespace Sexy
             return true;
         }
 
+        /// <summary>Port addition (keyboard/controller): whether a book can be picked (MenuNavigator).</summary>
+        public bool IsPickable(int theIndex)
+        {
+            return CanPick(theIndex);
+        }
+
         private void Glow(int theIndex)
         {
             TPoint aPos = GetAbsPos();

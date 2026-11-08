@@ -214,7 +214,12 @@ namespace Sexy
             {
                 return;
             }
-            Piece aPiece = GetPieceAt(x, y);
+            PieceDown(GetPieceAt(x, y));
+        }
+
+        /// <summary>Port: the tap logic of MouseDown on aPiece (null: off the tiles); the selector's A taps with it.</summary>
+        private void PieceDown(Piece aPiece)
+        {
             if (aPiece == null)
             {
                 ClearSelection();

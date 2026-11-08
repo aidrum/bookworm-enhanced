@@ -908,6 +908,45 @@ namespace Sexy
         /// count); the fourth asks the board to scramble and shakes are ignored for 2 seconds. Ignored while there
         /// is no board, it is disabled, or a modal dialog is up. (The port's heads have to feed this.)
         /// </summary>
+        /// <summary>Port addition (keyboard/controller): the menus and dialogs (MenuNavigator).</summary>
+        public MenuNavigator mNavigator;
+
+        /// <summary>
+        /// Port addition (keyboard/controller): while playing, the pad works the board's selector (Board.Selector.cs;
+        /// the board gets the keys itself); otherwise the pad and the keys work the menus and dialogs.
+        /// </summary>
+        public override bool GamePadUpdate(Microsoft.Xna.Framework.Input.GamePadState thePad, Microsoft.Xna.Framework.Input.GamePadState thePrevPad)
+        {
+            mNavigator ??= new MenuNavigator(this);
+            if (mBoard != null && (mBoard.GamePadUpdate(thePad, thePrevPad) || mBoard.CanUseSelector()))
+            {
+                mNavigator.Idle();
+                return true;
+            }
+            mNavigator.Update(thePad, thePrevPad);
+            return true;
+        }
+
+        /// <summary>Port addition: mouse or touch hides the keyboard/controller selector and menu focus.</summary>
+        public override void PointerInputUsed()
+        {
+            if (mBoard != null)
+            {
+                mBoard.mSelectorVisible = false;
+            }
+            mNavigator?.Hide();
+        }
+
+        /// <summary>Port addition: back (Escape, B, Back, Start) closes a book page first (MenuNavigator.BackPressed).</summary>
+        public override bool BackButtonPress()
+        {
+            if (mNavigator != null && mNavigator.BackPressed())
+            {
+                return true;
+            }
+            return base.BackButtonPress();
+        }
+
         public override void AccelerometerDidAccelerate(double timestamp, double ax, double ay, double az)
         {
             float[] anAccel = { (float)ax, (float)ay, (float)az };

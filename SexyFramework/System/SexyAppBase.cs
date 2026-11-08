@@ -952,6 +952,20 @@ namespace Sexy
             }
         }
 
+        /// <summary>
+        /// Port addition (controller): the game's turn with the pad each update (Back has already gone to
+        /// BackButtonPress). False when it doesn't use it.
+        /// </summary>
+        public virtual bool GamePadUpdate(Microsoft.Xna.Framework.Input.GamePadState thePad, Microsoft.Xna.Framework.Input.GamePadState thePrevPad)
+        {
+            return false;
+        }
+
+        /// <summary>Port addition: the mouse moved or clicked, or a touch began (hides keyboard/controller selectors).</summary>
+        public virtual void PointerInputUsed()
+        {
+        }
+
         public virtual bool BackButtonPress()
         {
             if (!mLoadingThreadCompleted)
