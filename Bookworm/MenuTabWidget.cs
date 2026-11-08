@@ -86,12 +86,18 @@ namespace Sexy
             Resize(mApp.mScreenPos.At(0x38), mApp.mScreenPos.At(0x3c), System.Math.Max(mImage.mWidth, mApp.mWidth), mImage.mHeight);
             SetupSlide(SLIDE_FROM_BOTTOM, 0.5f);
             BookWormButton aBooks = mTabs[TAB_BOOKS];
-            aBooks.mLabel = string.Format("{0}%", mApp.mCollectionator.GetCompletionPercent());
+            UpdateCompletion();
             aBooks.mLabelJustify = 2;
             aBooks.SetFont(Res.FONT_ARIAL_SMALL);
             aBooks.SetColor(0, LABEL_COLOR);
             aBooks.SetColor(1, LABEL_COLOR);
             aBooks.SetLabelPos(new TPoint(mApp.mScreenPos.At(0x68), mApp.mScreenPos.At(0x6c)));
+        }
+
+        /// <summary>Port: the Books tab's completion label (also refreshed by ChangeLanguage, as the bar stays up).</summary>
+        public void UpdateCompletion()
+        {
+            mTabs[TAB_BOOKS].mLabel = string.Format("{0}%", mApp.mCollectionator.GetCompletionPercent());
         }
 
         public override void Draw(Graphics g)
@@ -145,21 +151,14 @@ namespace Sexy
     }
 
     /// <summary>
-    /// Port (Spanish): a menu tab whose art is cut above its English name (baked into the art), with the Spanish
+    /// Port (translated): a menu tab whose art is cut above its English name (baked into the art), with the Spanish
     /// name drawn below the icon instead, like the art's (rounded bold, outlined, with a shadow; gold while lit,
     /// khaki otherwise). In English, a plain BookWormButton.
     /// </summary>
     public class MenuTabButton : BookWormButton
     {
-        /// <summary>The Spanish names, by tab.</summary>
-        private static readonly string[][] SPANISH_NAMES =
-        {
-            new[] { "Jugar" },
-            new[] { "Info" },
-            new[] { "Libros" },
-            new[] { "Opciones" },
-            new[] { "Más", "Juegos" }
-        };
+        /// <summary>The tabs' names (string table keys, lines split at '\n'), by tab.</summary>
+        private static readonly string[] NAMES = { "Play", "Stats", "Books", "Options", "More\nGames" };
 
         /// <summary>
         /// Where each tab's name starts in its art, and the art's height (iPad Retina rows: Play, Stats, Books,
@@ -192,13 +191,13 @@ namespace Sexy
 
         public override void Draw(Graphics g)
         {
-            bool aSpanish = Localization.IsSpanish && mId >= 0 && mId < SPANISH_NAMES.Length && mButtonImage != null;
+            bool aTranslated = Localization.IsTranslated && mId >= 0 && mId < NAMES.Length && mButtonImage != null;
             int aHeight = mButtonImage != null ? mButtonImage.mHeight : mHeight;
-            int aTextTop = aSpanish ? aHeight * TEXT_TOPS[mId, 0] / TEXT_TOPS[mId, 1] : 0;
+            int aTextTop = aTranslated ? aHeight * TEXT_TOPS[mId, 0] / TEXT_TOPS[mId, 1] : 0;
             mImageRows = aTextTop;
-            mClip = !aSpanish;
+            mClip = !aTranslated;
             base.Draw(g);
-            if (!aSpanish || mBtnNoDraw)
+            if (!aTranslated || mBtnNoDraw)
             {
                 return;
             }
@@ -206,8 +205,16 @@ namespace Sexy
             float aUnit = aHeight / (float)TEXT_TOPS[mId, 1];
             bool aLit = mSelected == 1;
             Font aFont = Res.FONT_ARIAL_MEDIUM_OUTLINED;
-            GradientText.Draw(g, aFont, SPANISH_NAMES[mId], mWidth / 2, aTextTop + (int)System.Math.Round(CAP_HEIGHT * aUnit),
-                aLit ? LIT_TOP : UNLIT_TOP, aLit ? LIT_BOTTOM : UNLIT_BOTTOM, null, (int)System.Math.Round(LINE_PITCH * aUnit / TEXT_SCALE), TEXT_SCALE);
+            string[] aLines = Localization.Lines(NAMES[mId]);
+            // Longer names than the art's (Optionen, Alternativ) shrink to the tab's width.
+            int aWidest = 1;
+            foreach (string aLine in aLines)
+            {
+                aWidest = System.Math.Max(aWidest, aFont.StringWidth(aLine));
+            }
+            float aScale = System.Math.Min(TEXT_SCALE, mWidth * 0.92f / aWidest);
+            GradientText.Draw(g, aFont, aLines, mWidth / 2, aTextTop + (int)System.Math.Round(CAP_HEIGHT * aUnit),
+                aLit ? LIT_TOP : UNLIT_TOP, aLit ? LIT_BOTTOM : UNLIT_BOTTOM, null, (int)System.Math.Round(LINE_PITCH * aUnit / aScale), aScale);
         }
     }
 }

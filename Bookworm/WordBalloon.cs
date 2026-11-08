@@ -116,20 +116,63 @@ namespace Sexy
         private void StartText(TRect theRect, Font theFont, int theJustify)
         {
             mTextWidget.Resize(theRect);
+            ResetText(theFont, theJustify);
+        }
+
+        /// <summary>Port: StartText without the resize (LayoutShrunk sizes the widget).</summary>
+        private void ResetText(Font theFont, int theJustify)
+        {
             mTextWidget.Clear();
             mTextWidget.SetFont(theFont);
             mTextWidget.SetColor(TEXT_COLOR);
             mTextWidget.SetJustify(theJustify);
         }
 
-        /// <summary>FUN_000300d8: an exclamation ("OPTIONS!") in the oval balloon.</summary>
+        /// <summary>The smallest LayoutShrunk goes.</summary>
+        private const float MIN_TEXT_SCALE = 0.5f;
+
+        /// <summary>Port (translations): the share of a round balloon's text area (each way) LayoutShrunk fits the text in.</summary>
+        private const float BUBBLE_FIT_SHARE = 0.85f;
+
+        /// <summary>
+        /// Port (translations): runs theLayout (which lays the text widget out, ending with Fit(2)) in theRect,
+        /// and while the text is wider or taller than it, again in a box larger by 1/scale, to be drawn shrunk by
+        /// that scale (FancyTextWidget.mScale) so it fills theRect. English is laid out once, as in the original.
+        /// </summary>
+        private void LayoutShrunk(TRect theRect, System.Action theLayout)
+        {
+            if (Localization.IsTranslated)
+            {
+                // The round balloons' text area reaches into their curved edges: fit a centred, smaller box.
+                int aWidth = (int)(theRect.mWidth * BUBBLE_FIT_SHARE);
+                int aHeight = (int)(theRect.mHeight * BUBBLE_FIT_SHARE);
+                theRect = new TRect(theRect.mX + (theRect.mWidth - aWidth) / 2, theRect.mY + (theRect.mHeight - aHeight) / 2, aWidth, aHeight);
+            }
+            float aScale = 1f;
+            while (true)
+            {
+                mTextWidget.Resize(theRect.mX, theRect.mY, (int)(theRect.mWidth / aScale), (int)(theRect.mHeight / aScale));
+                theLayout();
+                if (!Localization.IsTranslated || aScale <= MIN_TEXT_SCALE || mTextWidget.FitsBox())
+                {
+                    break;
+                }
+                aScale = System.Math.Max(MIN_TEXT_SCALE, aScale - 0.05f);
+            }
+            mTextWidget.mScale = aScale;
+        }
+
+        /// <summary>FUN_000300d8: an exclamation ("OPTIONS!") in the oval balloon. Port: shrunk when too long.</summary>
         public void Say(string theText)
         {
             int aSpacing = mApp.mScreenPos.At(0x3e4);
-            StartText(TextRect(0x320, 0x248), Res.FONT_COOPER, 0);
-            mTextWidget.AddText(theText, aSpacing);
-            mTextWidget.NewLine(aSpacing);
-            mTextWidget.Fit(2);
+            LayoutShrunk(TextRect(0x320, 0x248), () =>
+            {
+                ResetText(Res.FONT_COOPER, 0);
+                mTextWidget.AddText(theText, aSpacing);
+                mTextWidget.NewLine(aSpacing);
+                mTextWidget.Fit(2);
+            });
             Prepare(NextToLex(mApp.mScreenPos.RectAt(0x240)), AtlasResourceBase.IMAGE_GROUP4_00, false);
             mPendingMode = MODE_EXCLAIM;
             mText = "";
@@ -216,10 +259,27 @@ namespace Sexy
             g.DrawImage(theImage, new TRect(d + aExtra, 0, aW - d, aH), new TRect(d, 0, aW - d, aH));
         }
 
-        /// <summary>FUN_00030394: speech in the big bubble; too long, it gets twice the line spacing.</summary>
+        /// <summary>
+        /// FUN_00030394: speech in the big bubble; too long, it gets twice the line spacing. Port (translations):
+        /// too long, it is shrunk instead (the doubled spacing only made it overflow more).
+        /// </summary>
         public void Speak(string theText)
         {
             int aSpacing = mApp.mScreenPos.At(0x3e8);
+            if (Localization.IsTranslated)
+            {
+                LayoutShrunk(TextRect(0x330, 0x258), () =>
+                {
+                    ResetText(Res.FONT_ARIAL_LARGE, 0);
+                    mTextWidget.AddText(theText, aSpacing);
+                    mTextWidget.NewLine(aSpacing);
+                    mTextWidget.Fit(2);
+                });
+                Prepare(mApp.mScreenPos.RectAt(0x250), AtlasResourceBase.IMAGE_GROUP31_00, false);
+                mPendingMode = MODE_SPEECH;
+                mText = "";
+                return;
+            }
             StartText(TextRect(0x330, 0x258), Res.FONT_ARIAL_LARGE, 0);
             mTextWidget.AddText(theText, aSpacing);
             mTextWidget.NewLine(aSpacing);

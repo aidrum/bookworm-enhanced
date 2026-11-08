@@ -42,7 +42,7 @@ namespace Sexy
             mContinueArcade = AddButton(BUTTON_CONTINUE_ARCADE, AtlasResourceBase.IMAGE_GROUP11_16, 0x28);
         }
 
-        /// <summary>Port (Spanish): the three mode buttons, whose English titles are baked into their images.</summary>
+        /// <summary>Port (translated): the three mode buttons, whose English titles are baked into their images.</summary>
         private TextOrImageButton mClassic;
 
         private TextOrImageButton mArcade;
@@ -58,30 +58,31 @@ namespace Sexy
 
         internal static readonly Color HOW_TO_PLAY_TEXT_BOTTOM = new Color(180, 67, 117, 255);
 
-        internal const string HOW_TO_PLAY_TEXT_ES = "CÓMO JUGAR";
+        /// <summary>Port: the "Saved Game" ribbon's yellow, top to bottom (sampled from the art).</summary>
+        internal static readonly Color RIBBON_TEXT_TOP = new Color(255, 246, 80, 255);
+
+        internal static readonly Color RIBBON_TEXT_BOTTOM = new Color(238, 200, 30, 255);
 
         /// <summary>
-        /// Port: in Spanish the mode buttons draw their titles in outlined Cooper Black (the art's typeface), two
-        /// lines like the art for the modes; in English, the original images.
+        /// Port: translated, the mode buttons draw their titles in outlined Cooper Black (the art's typeface), two
+        /// lines like the art for the modes (worded as the PC version's mode art), and the Continue ribbons are the
+        /// ribbon without its "Saved Game" (localized sheet) with the language's words drawn over it; in English,
+        /// the original images.
         /// </summary>
         private void ApplyLanguage()
         {
-            bool aText = Localization.IsSpanish;
-            mClassic.SetText(aText ? "JUEGO\nCLÁSICO" : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
-            mArcade.SetText(aText ? "JUEGO\nDE ACCIÓN" : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
-            mHowToPlay.SetText(aText ? HOW_TO_PLAY_TEXT_ES : null, HOW_TO_PLAY_TEXT_TOP, HOW_TO_PLAY_TEXT_BOTTOM);
-            // The Continue ribbons: "Saved Game" is baked into their art; Spanish has its own (localized sheet).
+            bool aText = Localization.IsTranslated;
+            mClassic.SetText(aText ? SexyAppBase.Loc("CLASSIC\nGAME") : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
+            mArcade.SetText(aText ? SexyAppBase.Loc("ACTION\nGAME") : null, MODE_TEXT_TOP, MODE_TEXT_BOTTOM);
+            mHowToPlay.SetText(aText ? SexyAppBase.Loc("HOW TO PLAY") : null, HOW_TO_PLAY_TEXT_TOP, HOW_TO_PLAY_TEXT_BOTTOM);
             Image aRibbon = AtlasResourceBase.IMAGE_GROUP11_16;
-            if (aText)
+            Image aBlank = aText ? AtlasResourceBase.GetLocalizedImage(mApp, aRibbon.mWidth / 47, AtlasResourceBase.LOCALIZED_BLANK_RIBBON) : null;
+            foreach (BookWormButton aButton in new[] { mContinueClassic, mContinueArcade })
             {
-                Image aSpanish = AtlasResourceBase.GetLocalizedImage(mApp, aRibbon.mWidth / 47, AtlasResourceBase.LOCALIZED_SAVED_GAME_ES);
-                if (aSpanish != null)
-                {
-                    aRibbon = aSpanish;
-                }
+                TextOrImageButton aContinue = (TextOrImageButton)aButton;
+                aContinue.mButtonImage = aBlank ?? aRibbon;
+                aContinue.SetRibbonText(aBlank != null ? SexyAppBase.Loc("Saved\nGame") : null, RIBBON_TEXT_TOP, RIBBON_TEXT_BOTTOM);
             }
-            mContinueClassic.mButtonImage = aRibbon;
-            mContinueArcade.mButtonImage = aRibbon;
         }
 
         private BookWormButton AddButton(int theId, Image theImage, int thePosOffset)
@@ -245,9 +246,10 @@ namespace Sexy
     }
 
     /// <summary>
-    /// Port (Spanish): a game-selector button that draws its title as text, centred line by line in outlined
+    /// Port (translated): a game-selector button that draws its title as text, centred line by line in outlined
     /// Cooper Black, in place of its image (which still sizes it); with no text, a plain BookWormButton. Like the
-    /// art, the text has a shadow and a gradient (GradientText).
+    /// art, the text has a shadow and a gradient (GradientText). A ribbon (SetRibbonText) draws its text-free
+    /// image with the text over it instead.
     /// </summary>
     public class TextOrImageButton : BookWormButton
     {
@@ -261,13 +263,43 @@ namespace Sexy
         {
         }
 
+        /// <summary>True: the image is drawn, the text fitted over it where the ribbon art's words were.</summary>
+        private bool mOverImage;
+
         public void SetText(string theText, Color theTopColor, Color theBottomColor)
         {
             mLines = theText?.Split('\n');
             mTopColor = theTopColor;
             mBottomColor = theBottomColor;
+            mOverImage = false;
             SetFont(Res.FONT_COOPER_OUTLINED);
         }
+
+        /// <summary>Port: the Continue ribbon's words (null: the original art alone), in Arial Rounded as the art's.</summary>
+        public void SetRibbonText(string theText, Color theTopColor, Color theBottomColor)
+        {
+            mLines = theText?.Split('\n');
+            mTopColor = theTopColor;
+            mBottomColor = theBottomColor;
+            mOverImage = true;
+        }
+
+        /// <summary>
+        /// The ribbon art's words (iPad Retina, 188 x 324): their capitals from row 98 to the last baseline at 196,
+        /// 150 wide, centred; the same art at every resolution, so it scales with the image.
+        /// </summary>
+        private const int RIBBON_ART_WIDTH = 188;
+
+        private const int RIBBON_ART_HEIGHT = 324;
+
+        private const int RIBBON_TEXT_CENTER_Y = 147;
+
+        private const int RIBBON_TEXT_WIDTH = 150;
+
+        private const int RIBBON_TEXT_HEIGHT = 98;
+
+        /// <summary>Port: how much of a mode button's width its translated title may take.</summary>
+        private const float MODE_TEXT_WIDTH_SHARE = 0.9f;
 
         public override void Draw(Graphics g)
         {
@@ -276,13 +308,25 @@ namespace Sexy
                 base.Draw(g);
                 return;
             }
+            if (mOverImage)
+            {
+                base.Draw(g);
+                if (!mBtnNoDraw)
+                {
+                    GradientText.DrawFitted(g, Res.FONT_ARIAL_MEDIUM, mLines, mWidth / 2, mHeight * RIBBON_TEXT_CENTER_Y / RIBBON_ART_HEIGHT,
+                        mWidth * RIBBON_TEXT_WIDTH / RIBBON_ART_WIDTH, mHeight * RIBBON_TEXT_HEIGHT / RIBBON_ART_HEIGHT, mTopColor, mBottomColor);
+                }
+                return;
+            }
             if (mBtnNoDraw)
             {
                 return;
             }
             int aLineHeight = mFont.GetLineSpacing();
-            int aFirstBaseline = (mHeight - aLineHeight * mLines.Length) / 2 + mFont.GetAscent();
-            GradientText.Draw(g, mFont, mLines, mWidth / 2, aFirstBaseline, mTopColor, mBottomColor);
+            // Port: a longer title than the art's (KLASSISCHES SPIEL) shrinks to the button, its block kept centred.
+            float aScale = GradientText.FitScale(mFont, mLines, (int)(mWidth * MODE_TEXT_WIDTH_SHARE));
+            int aFirstBaseline = (int)System.Math.Round((mHeight - aLineHeight * mLines.Length * aScale) / 2 + mFont.GetAscent() * aScale);
+            GradientText.Draw(g, mFont, mLines, mWidth / 2, aFirstBaseline, mTopColor, mBottomColor, null, aLineHeight, aScale);
         }
     }
 }

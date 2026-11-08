@@ -11,8 +11,6 @@ namespace Sexy
 
         private const int LETTER_WEIGHT_TOTAL = 95500;
 
-        private static readonly int SPANISH_LETTER_WEIGHT_TOTAL = System.Linq.Enumerable.Sum(Localization.SPANISH_LETTER_WEIGHTS);
-
         /// <summary>Percent chance of a random fire tile per refill, by level (0xccdb8).</summary>
         private static readonly int[] FIRE_CHANCE = { 0, 0, 0, 2, 3, 4, 6, 8, 12, 16, 24, 32, 30 };
 
@@ -22,9 +20,9 @@ namespace Sexy
         /// <summary>A random letter by the odds, never the same as the last one.</summary>
         private static char PickLetter()
         {
-            // Port: Spanish takes the PC Spanish version's letter odds (its total is their sum, as on the PC).
-            int[] aWeights = Localization.IsSpanish ? Localization.SPANISH_LETTER_WEIGHTS : LETTER_WEIGHTS;
-            int aTotal = Localization.IsSpanish ? SPANISH_LETTER_WEIGHT_TOTAL : LETTER_WEIGHT_TOTAL;
+            // Port: another language takes its PC version's letter odds (their total is their sum, as on the PC).
+            int[] aWeights = Localization.LetterWeights ?? LETTER_WEIGHTS;
+            int aTotal = Localization.LetterWeights != null ? Localization.LetterWeightTotal : LETTER_WEIGHT_TOTAL;
             int aLetter;
             do
             {

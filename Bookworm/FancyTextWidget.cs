@@ -61,6 +61,12 @@ namespace Sexy
         /// <summary>The current line's width so far (0xb8).</summary>
         public int mLineWidth;
 
+        /// <summary>
+        /// Port (translations): the text is drawn shrunk by this about the widget's corner, laid out in a box this
+        /// much larger (WordBalloon.LayoutShrunk). Clear resets it to 1.
+        /// </summary>
+        public float mScale = 1f;
+
         public FancyTextWidget()
         {
             mColor = DEFAULT_COLOR;
@@ -80,6 +86,7 @@ namespace Sexy
             mLineY = 0;
             mTextHeight = 0;
             mColumnTop = 0;
+            mScale = 1f;
             mChunks.Clear();
         }
 
@@ -254,14 +261,49 @@ namespace Sexy
             return mTextHeight <= mHeight;
         }
 
-        /// <summary>0x3b6b8.</summary>
+        /// <summary>Port: whether the text fits the widget both ways (no word wider than it, no lines below it).</summary>
+        public bool FitsBox()
+        {
+            if (mTextHeight > mHeight)
+            {
+                return false;
+            }
+            foreach (Chunk aChunk in mChunks)
+            {
+                if (aChunk.mX < 0 || aChunk.mX + aChunk.mWidth > mWidth)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>0x3b6b8. Port: shrunk by mScale about the corner.</summary>
         public override void Draw(Graphics g)
         {
+            bool aScaled = mScale != 1f;
+            if (aScaled)
+            {
+                g.SetScale(mScale, mScale, 0f, 0f);
+            }
             foreach (Chunk aChunk in mChunks)
             {
                 g.SetFont(aChunk.mFont);
                 g.SetColor(aChunk.mColor);
-                g.DrawString(aChunk.mText, aChunk.mX, aChunk.mFont.GetAscent() + aChunk.mY);
+                if (aScaled)
+                {
+                    // The font directly: Graphics.DrawString culls by the unscaled baseline, which would drop the
+                    // lower lines of a layout made for a box larger than the clip.
+                    aChunk.mFont.DrawString(g, aChunk.mX, aChunk.mFont.GetAscent() + aChunk.mY, aChunk.mText, aChunk.mColor, g.GetClipRect());
+                }
+                else
+                {
+                    g.DrawString(aChunk.mText, aChunk.mX, aChunk.mFont.GetAscent() + aChunk.mY);
+                }
+            }
+            if (aScaled)
+            {
+                g.SetScale(1f, 1f, 0f, 0f);
             }
         }
     }

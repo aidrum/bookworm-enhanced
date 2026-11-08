@@ -147,7 +147,7 @@ namespace Sexy
         /// </summary>
         private static string GetBooksFolder()
         {
-            return Localization.IsSpanish ? "books_" + Constants.Language : "books";
+            return Localization.IsTranslated ? "books_" + Constants.Language : "books";
         }
 
         /// <summary>

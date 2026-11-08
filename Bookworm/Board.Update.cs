@@ -237,7 +237,7 @@ namespace Sexy
             if (mBonusWord.Length == 0 && (mLevel > 1 || (mLevel == 1 && mLevelStats.mWords > 0)))
             {
                 mBonusWord = mNextBonusWord;
-                mOtherBonusWord = mOtherNextBonusWord;
+                mLanguageBonusWords = mLanguageNextBonusWords;
                 if (mBonusWord.Length != 0)
                 {
                     mApp.mWordBalloon.ShowBonusWord(mBonusWord);

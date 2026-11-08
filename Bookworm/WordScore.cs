@@ -15,10 +15,10 @@ namespace Sexy
             1, 4, 4, 3, 1, 5, 3, 5, 1, 8, 7, 2, 4, 2, 1, 4, 7, 2, 1, 2, 2, 5, 6, 8, 6, 10
         };
 
-        /// <summary>A letter's value in the current language (port: Spanish takes the PC Spanish version's).</summary>
+        /// <summary>A letter's value in the current language (port: another language takes its PC version's).</summary>
         public static int GetLetterValue(char theLetter)
         {
-            int[] aLetterValues = Localization.IsSpanish ? Localization.SPANISH_LETTER_VALUES : LETTER_VALUES;
+            int[] aLetterValues = Localization.LetterValues ?? LETTER_VALUES;
             int i = theLetter - 'A';
             return i >= 0 && i < 26 ? aLetterValues[i] : 0;
         }

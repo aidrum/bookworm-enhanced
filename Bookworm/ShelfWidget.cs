@@ -316,56 +316,63 @@ namespace Sexy
 
         /// <summary>
         /// The shelf's label, cel theIndex of IMAGE_GROUP31_01 ("3 letter words" to "12 letter words"). Port: in
-        /// Spanish, only the cel's number, with "letras" drawn under it.
+        /// another language, only the cel's number, with its word ("letras") drawn under it.
         /// </summary>
         private static void DrawLengthLabel(Graphics g, int theX, int theY, int theIndex)
         {
             Image anImage = AtlasResourceBase.IMAGE_GROUP31_01;
-            if (!Localization.IsSpanish)
+            if (!Localization.IsTranslated)
             {
                 g.DrawImageCel(anImage, theX, theY, theIndex);
                 return;
             }
             int aCelWidth = anImage.GetCelWidth();
             int aCelHeight = anImage.GetCelHeight();
-            MemoryImage aLabels = GetSpanishLabels(anImage);
+            MemoryImage aLabels = GetTranslatedLabels(anImage);
             if (aLabels == null)
             {
                 // Inside an offscreen render the strip cannot be built: drawn piece by piece.
-                DrawSpanishLabel(g, anImage, theX, theY, theIndex);
+                DrawTranslatedLabel(g, anImage, theX, theY, theIndex);
                 return;
             }
             g.DrawImage(aLabels, theX, theY, new TRect(theIndex * aCelWidth, 0, aCelWidth, aCelHeight));
         }
 
-        /// <summary>Port (Spanish): a label's number cut from the art, "letras" drawn under it.</summary>
-        private static void DrawSpanishLabel(Graphics g, Image theArt, int theX, int theY, int theIndex)
+        /// <summary>Port (translated): a label's number cut from the art, "letras" drawn under it.</summary>
+        private static void DrawTranslatedLabel(Graphics g, Image theArt, int theX, int theY, int theIndex)
         {
             int aCelWidth = theArt.GetCelWidth();
             int aCelHeight = theArt.GetCelHeight();
             g.DrawImage(theArt, theX, theY, new TRect(theIndex * aCelWidth, 0, aCelWidth, aCelHeight * NUMBER_ROWS / LABEL_ROWS));
-            GradientText.Draw(g, Res.FONT_ARIAL_MEDIUM_OUTLINED, new[] { "letras" }, theX + aCelWidth / 2, theY + aCelHeight * LETRAS_BASELINE / LABEL_ROWS,
-                LETRAS_TOP, LETRAS_BOTTOM, null, 0, LETRAS_SCALE);
+            // The language's word ("letras"), shrunk to the cel when longer (Buchstaben, bokstäver).
+            string aWord = SexyAppBase.Loc("letters");
+            float aScale = System.Math.Min(LETRAS_SCALE, aCelWidth * 0.9f / System.Math.Max(1, Res.FONT_ARIAL_MEDIUM_OUTLINED.StringWidth(aWord)));
+            GradientText.Draw(g, Res.FONT_ARIAL_MEDIUM_OUTLINED, new[] { aWord }, theX + aCelWidth / 2, theY + aCelHeight * LETRAS_BASELINE / LABEL_ROWS,
+                LETRAS_TOP, LETRAS_BOTTOM, null, 0, aScale);
         }
 
-        /// <summary>Port (performance, Spanish): every label ("3 letras" to "12 letras") drawn once into one strip
+        /// <summary>Port (performance, translated): every label ("3 letras" to "12 letras") drawn once into one strip
         /// laid out as the art's cels, then each blitted from it; built again for other art (another texture set)
         /// or when the device lost it.</summary>
-        private static MemoryImage sSpanishLabels;
+        private static MemoryImage sTranslatedLabels;
 
-        private static Image sSpanishLabelsArt;
+        private static Image sTranslatedLabelsArt;
 
-        private static MemoryImage GetSpanishLabels(Image theArt)
+        /// <summary>The language the strip was drawn in.</summary>
+        private static Constants.LanguageIndex sTranslatedLabelsLanguage;
+
+        private static MemoryImage GetTranslatedLabels(Image theArt)
         {
-            if (sSpanishLabels != null && ReferenceEquals(sSpanishLabelsArt, theArt) && !sSpanishLabels.RenderTarget.IsContentLost)
+            if (sTranslatedLabels != null && ReferenceEquals(sTranslatedLabelsArt, theArt) && sTranslatedLabelsLanguage == Constants.Language &&
+                !sTranslatedLabels.RenderTarget.IsContentLost)
             {
-                return sSpanishLabels;
+                return sTranslatedLabels;
             }
             if (Graphics.IsOffscreen)
             {
                 return null;
             }
-            sSpanishLabels?.Dispose();
+            sTranslatedLabels?.Dispose();
             int aCels = theArt.mNumCols;
             MemoryImage aStrip = new MemoryImage();
             aStrip.Create(theArt.GetCelWidth() * aCels, theArt.GetCelHeight());
@@ -373,12 +380,13 @@ namespace Sexy
             g.Clear(Color.Transparent);
             for (int i = 0; i < aCels; i++)
             {
-                DrawSpanishLabel(g, theArt, i * theArt.GetCelWidth(), 0, i);
+                DrawTranslatedLabel(g, theArt, i * theArt.GetCelWidth(), 0, i);
             }
             g.SetRenderTarget(null);
             g.PrepareForReuse();
-            sSpanishLabels = aStrip;
-            sSpanishLabelsArt = theArt;
+            sTranslatedLabels = aStrip;
+            sTranslatedLabelsArt = theArt;
+            sTranslatedLabelsLanguage = Constants.Language;
             return aStrip;
         }
 

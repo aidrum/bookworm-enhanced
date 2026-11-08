@@ -19,7 +19,9 @@ namespace Sexy
             fr,
             de,
             es,
-            it
+            it,
+            sv,
+            pt
         }
 
         public static bool Loaded = true;

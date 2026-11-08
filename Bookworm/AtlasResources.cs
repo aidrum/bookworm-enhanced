@@ -79,13 +79,13 @@ namespace Sexy
         /// <summary>
         /// Port (translations): the art made for the other languages, one sheet per art scale (images/localized.png
         /// at the iPhone's, localizedR at 2x, localizediPadR at 4x; GradientText.LoadScaled): the banners' frame
-        /// without its English title (the Word History and More Games banners), and the Continue ribbon with
-        /// "Juego Guardado" (IMAGE_GROUP11_16's Spanish), and the Books tab's bonus list square without its "BONUS
+        /// without its English title (the Word History and More Games banners), the Continue ribbon without
+        /// its "Saved Game" (IMAGE_GROUP11_16, from references/localizedUI/SavedGame.png), and the Books tab's bonus list square without its "BONUS
         /// BOOK LIST" (IMAGE_GROUP7_04). Loaded on first use, once per scale; null without it.
         /// </summary>
         public const int LOCALIZED_BLANK_BANNER = 0;
 
-        public const int LOCALIZED_SAVED_GAME_ES = 1;
+        public const int LOCALIZED_BLANK_RIBBON = 1;
 
         public const int LOCALIZED_BLANK_BONUS_LIST = 2;
 

@@ -120,13 +120,14 @@ namespace Sexy
             Image aTitle = AtlasResourceBase.IMAGE_GROUP11_15;
             // Port (phones): below a camera cutout (notch) reaching past the page's top (its resting place, 0x1e0).
             int aTitleY = System.Math.Max(0, Main.GetSafeInsetTopInGame() - mApp.mScreenPos.At(0x1e4));
-            if (Localization.IsSpanish)
+            if (Localization.IsTranslated)
             {
-                // Port (Spanish): the title art has the English baked in; draw it as the menu button does.
+                // Port (translated): the title art has the English baked in; draw it as the menu button does.
                 Font aFont = Res.FONT_COOPER_OUTLINED;
                 int aBaseline = aTitleY + (aTitle.mHeight - aFont.GetLineSpacing()) / 2 + aFont.GetAscent();
-                GradientText.Draw(g, aFont, new[] { BWGameSelector.HOW_TO_PLAY_TEXT_ES }, mWidth / 2, aBaseline,
-                    BWGameSelector.HOW_TO_PLAY_TEXT_TOP, BWGameSelector.HOW_TO_PLAY_TEXT_BOTTOM);
+                // Shrunk to the title art's width when longer (SO WIRD GESPIELT).
+                GradientText.Draw(g, aFont, new[] { SexyAppBase.Loc("HOW TO PLAY") }, mWidth / 2, aBaseline,
+                    BWGameSelector.HOW_TO_PLAY_TEXT_TOP, BWGameSelector.HOW_TO_PLAY_TEXT_BOTTOM, null, 0, 1f, System.Math.Min(aTitle.mWidth, mWidth * 9 / 10));
                 return;
             }
             g.DrawImage(aTitle, (mWidth - aTitle.mWidth) / 2, aTitleY);

@@ -16,10 +16,11 @@ namespace Sexy
         /// Draws the lines centred on theCenterX, the first on theFirstBaseline and each next a line spacing
         /// lower. The gradient runs from the first line's ascent to the last line's baseline. theScale (below 1:
         /// the fonts cannot be scaled themselves) shrinks it all about (theCenterX, theFirstBaseline); the line
-        /// spacing is before scaling.
+        /// spacing is before scaling. theMaxWidth above 0 shrinks it further so the widest line fits it.
         /// </summary>
-        public static void Draw(Graphics g, Font theFont, string[] theLines, int theCenterX, int theFirstBaseline, Color theTop, Color theBottom, Color? theOutline = null, int theLineSpacing = 0, float theScale = 1f)
+        public static void Draw(Graphics g, Font theFont, string[] theLines, int theCenterX, int theFirstBaseline, Color theTop, Color theBottom, Color? theOutline = null, int theLineSpacing = 0, float theScale = 1f, int theMaxWidth = 0)
         {
+            theScale = System.Math.Min(theScale, FitScale(theFont, theLines, theMaxWidth));
             // Inside another offscreen render the cache cannot be built (switching targets would lose that one).
             if (Graphics.IsOffscreen)
             {
@@ -45,6 +46,21 @@ namespace Sexy
             g.SetColorizeImages(false);
             g.DrawImage(anImage, new TRect(aLeft, aTop, aRight - aLeft, aBottom - aTop), new TRect(0, 0, anImage.mWidth, anImage.mHeight));
             g.SetColorizeImages(aColorize);
+        }
+
+        /// <summary>The scale (at most 1) at which the widest of theLines fits theMaxWidth; 1 when theMaxWidth is 0.</summary>
+        public static float FitScale(Font theFont, string[] theLines, int theMaxWidth)
+        {
+            if (theMaxWidth <= 0)
+            {
+                return 1f;
+            }
+            int aWidest = 1;
+            foreach (string aLine in theLines)
+            {
+                aWidest = System.Math.Max(aWidest, theFont.StringWidth(aLine));
+            }
+            return System.Math.Min(1f, theMaxWidth / (float)aWidest);
         }
 
         /// <summary>
@@ -279,11 +295,22 @@ namespace Sexy
             Draw(g, theFont, theLines, theCenterX, aFirstBaseline, theTop, theBottom, theOutline, aPitch, aScale);
         }
 
-        /// <summary>A banner's title: one line, centred on a banner drawn at (theX, theY), theWidth wide.</summary>
+        /// <summary>How much of a banner's width its title may take (inside the frame's scrolled ends).</summary>
+        private const float BANNER_TITLE_SHARE = 0.72f;
+
+        /// <summary>
+        /// A banner's title: one line, centred on a banner drawn at (theX, theY), theWidth wide. Port: a longer
+        /// title shrinks to fit the banner's plaque, about its baseline's middle so it stays centred.
+        /// </summary>
         public static void DrawBannerTitle(Graphics g, string theTitle, int theX, int theY, int theWidth)
         {
-            int aBaseline = theY + theWidth * BANNER_BASELINE / 320;
-            Draw(g, Res.FONT_COOPER_OUTLINED, new[] { theTitle }, theX + theWidth / 2, aBaseline, BANNER_TOP, BANNER_BOTTOM, BANNER_OUTLINE);
+            Font aFont = Res.FONT_COOPER_OUTLINED;
+            string[] aLines = { theTitle };
+            float aScale = FitScale(aFont, aLines, (int)(theWidth * BANNER_TITLE_SHARE));
+            // Scaled about the baseline, the caps would sit low on the plaque: raise the baseline by half the shrink.
+            int aBaseline = theY + theWidth * BANNER_BASELINE / 320
+                - (int)System.Math.Round(aFont.GetAscent() * CAP_RATIO * (1f - aScale) / 2f);
+            Draw(g, aFont, aLines, theX + theWidth / 2, aBaseline, BANNER_TOP, BANNER_BOTTOM, BANNER_OUTLINE, 0, aScale);
         }
     }
 }

@@ -44,6 +44,9 @@ namespace Sexy
             bool inNumber = false;
             int aLen = 0;
             int aKeep = 0;
+            // Port: the previous word's length. A prefix count longer than it (the PC German list had "90" after
+            // a 9-letter word) would take stale bytes, 0 terminators among them, and corrupt the trie into a loop.
+            int aPrevLen = 0;
             foreach (byte c in theData)
             {
                 if (c >= (byte)'0' && c <= (byte)'9')
@@ -60,6 +63,7 @@ namespace Sexy
                     {
                         aWord[aLen] = 0;
                         AddWord(aWord, aLen);
+                        aPrevLen = aLen;
                     }
                     aLen = 0;
                 }
@@ -67,7 +71,11 @@ namespace Sexy
                 {
                     if (aKeep > 0 && aLen == 0)
                     {
-                        aLen = aKeep;
+                        aLen = System.Math.Min(aKeep, aPrevLen);
+                    }
+                    if (aLen >= aWord.Length - 1)
+                    {
+                        continue;
                     }
                     aWord[aLen++] = (byte)char.ToUpperInvariant((char)c);
                 }

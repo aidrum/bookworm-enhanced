@@ -134,10 +134,10 @@ namespace Sexy
                         mRand.mt[i] = aReader.ReadUInt32();
                     }
                     mRand.mti = aReader.ReadInt32();
-                    // Saves from before the Spanish mode lack these: their bonus words are English, with none
-                    // picked in Spanish (SyncBonusWordLanguage picks those when needed).
-                    mOtherBonusWord = "";
-                    mOtherNextBonusWord = "";
+                    // Saves from before these lack them: their other languages' bonus words are picked by
+                    // SyncBonusWordLanguage when needed.
+                    mLanguageBonusWords = "";
+                    mLanguageNextBonusWords = "";
                     mBonusWordLanguage = 0;
                     for (int aRow = 0; aRow < ROWS; aRow++)
                     {

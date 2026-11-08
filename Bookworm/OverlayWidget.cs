@@ -120,9 +120,6 @@ namespace Sexy
             }
         }
 
-        /// <summary>Port (Spanish): the banner's title, by line.</summary>
-        private static readonly string[] SPANISH_TITLE = "PALABRA\nBONUS".Split('\n');
-
         /// <summary>
         /// Port: the banner art's rows (iPad Retina, 280 high; the same art at every resolution, so it scales with
         /// the image): where the plaque starts below the baked-in English title, the title's two baselines, and its
@@ -146,11 +143,11 @@ namespace Sexy
         private const int BANNER_TITLE_WIDTH = 276;
 
         /// <summary>
-        /// Port (Spanish): the banner art cut below its English title (only the plaque), with "PALABRA BONUS" drawn
+        /// Port (translated): the banner art cut below its English title (only the plaque), with "PALABRA BONUS" drawn
         /// above it in the art's typeface and the menu's yellow gradient, shrunk to the art title's width, on its
         /// baselines (like the menu tabs, MenuTabButton).
         /// </summary>
-        private void DrawSpanishBannerArt(Graphics g)
+        private void DrawTranslatedBannerArt(Graphics g)
         {
             Image anImage = AtlasResourceBase.IMAGE_GROUP4_06;
             float aUnit = anImage.mHeight / (float)BANNER_ART_HEIGHT;
@@ -160,15 +157,16 @@ namespace Sexy
             g.DrawImage(anImage, new TRect(mBannerX, mBannerY + aCut, anImage.mWidth, anImage.mHeight - aCut),
                 new TRect(0, aCut, anImage.mWidth, anImage.mHeight - aCut));
             Font aFont = Res.FONT_COOPER_OUTLINED;
+            string[] aTitle = Localization.Lines("BONUS\nWORD");
             int aWidest = 0;
-            foreach (string aLine in SPANISH_TITLE)
+            foreach (string aLine in aTitle)
             {
                 aWidest = System.Math.Max(aWidest, aFont.StringWidth(aLine));
             }
             float aMaxWidth = anImage.mWidth * BANNER_TITLE_WIDTH / (float)BANNER_ART_WIDTH;
             float aScale = aWidest > aMaxWidth ? aMaxWidth / aWidest : 1f;
             // The line spacing is before scaling: the scaled baselines land on the art's.
-            GradientText.Draw(g, aFont, SPANISH_TITLE, mBannerX + anImage.mWidth / 2,
+            GradientText.Draw(g, aFont, aTitle, mBannerX + anImage.mWidth / 2,
                 mBannerY + (int)System.Math.Round(BANNER_FIRST_BASELINE * aUnit), BWGameSelector.MODE_TEXT_TOP,
                 BWGameSelector.MODE_TEXT_BOTTOM, null, (int)System.Math.Round(BANNER_LINE_PITCH * aUnit / aScale), aScale);
         }
@@ -180,9 +178,9 @@ namespace Sexy
         /// </summary>
         private void DrawBanner(Graphics g)
         {
-            if (Localization.IsSpanish)
+            if (Localization.IsTranslated)
             {
-                DrawSpanishBannerArt(g);
+                DrawTranslatedBannerArt(g);
             }
             else
             {

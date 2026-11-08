@@ -107,22 +107,10 @@ namespace Sexy
         public Dictionary mDictionary = new Dictionary(); // 0x11dc
 
         /// <summary>
-        /// Words that can be the bonus word (dict/bonus_words.txt, only those in the dictionary) (0x11f0). Port: one
-        /// list per language (by Localization.LANGUAGES), as the board picks a bonus word in each.
+        /// Words that can be the bonus word (dict/bonus_words.txt, only those in the dictionary) (0x11f0). Port: the
+        /// current language's only; LoadWords replaces them when the language changes.
         /// </summary>
-        public System.Collections.Generic.List<string>[] mBonusWordLists;
-
-        /// <summary>The current language's bonus words.</summary>
-        public System.Collections.Generic.List<string> mBonusWords
-        {
-            get { return GetBonusWords(Localization.CurrentIndex()); }
-        }
-
-        /// <summary>Port: a language's bonus words (by its index in Localization.LANGUAGES).</summary>
-        public System.Collections.Generic.List<string> GetBonusWords(int theLanguage)
-        {
-            return mBonusWordLists != null ? mBonusWordLists[theLanguage] : new System.Collections.Generic.List<string>();
-        }
+        public System.Collections.Generic.List<string> mBonusWords = new System.Collections.Generic.List<string>();
 
         public BookWormApp(Main theGame) : base(theGame)
         {
@@ -293,9 +281,9 @@ namespace Sexy
         }
 
         /// <summary>
-        /// The loading thread's dictionary, bonus words (only those in the dictionary) and definitions. Port: also
-        /// again when the language changes (the dictionary and definitions; the bonus words of every language are
-        /// read the first time); in Spanish ContentFS finds the PC version's lists in es.lproj/dict.
+        /// The loading thread's dictionary, bonus words (only those in the dictionary) and definitions. Port: only
+        /// the current language's; ChangeLanguage drops them and calls this again for the new one. In another
+        /// language ContentFS finds its PC version's lists in &lt;lang&gt;.lproj/dict.
         /// </summary>
         public bool LoadWords()
         {
@@ -304,40 +292,34 @@ namespace Sexy
             {
                 return false;
             }
-            if (mBonusWordLists == null)
-            {
-                System.Collections.Generic.List<string>[] aLists = new System.Collections.Generic.List<string>[Localization.LANGUAGES.Length];
-                for (int i = 0; i < aLists.Length; i++)
-                {
-                    string aLanguage = Localization.LANGUAGES[i].ToString();
-                    Dictionary aListDictionary = aDictionary;
-                    if (i != Localization.CurrentIndex())
-                    {
-                        // The other language's dictionary, only to keep its bonus words that are in it.
-                        aListDictionary = new Dictionary();
-                        aListDictionary.LoadFile("dict/oed_encoded.txt", aLanguage);
-                    }
-                    aLists[i] = new System.Collections.Generic.List<string>();
-                    LoadWordList("dict/bonus_words.txt", aLists[i], aLanguage);
-                    int aBonusCount = aLists[i].Count;
-                    aLists[i].RemoveAll(aWord => !aListDictionary.IsWord(aWord));
-                    Console.Error.WriteLine(string.Format("Dictionary ({0}): {1} words, {2} of {3} bonus words kept", aLanguage, aListDictionary.mWordCount, aLists[i].Count, aBonusCount));
-                }
-                mBonusWordLists = aLists;
-            }
+            System.Collections.Generic.List<string> aBonusWords = new System.Collections.Generic.List<string>();
+            LoadWordList("dict/bonus_words.txt", aBonusWords);
+            int aBonusCount = aBonusWords.Count;
+            aBonusWords.RemoveAll(aWord => !aDictionary.IsWord(aWord));
+            Console.Error.WriteLine(string.Format("Dictionary ({0}): {1} words, {2} of {3} bonus words kept", Constants.Language, aDictionary.mWordCount, aBonusWords.Count, aBonusCount));
             Definitionator aDefinitionator = new Definitionator(this);
-            // Port: the PC Spanish version has no definitions (HAS_DEFINITIONS false, an empty popdefs.txt).
-            if (!Localization.IsSpanish)
+            // Port: the PC versions of the other languages have no definitions (HAS_DEFINITIONS false, an empty popdefs.txt).
+            if (!Localization.IsTranslated)
             {
                 aDefinitionator.Load("dict/oed_definitions.txt");
             }
             mDictionary = aDictionary;
+            mBonusWords = aBonusWords;
             mDefinitionator = aDefinitionator;
             return true;
         }
 
+        /// <summary>Port: drops the current language's words (ChangeLanguage, before LoadWords reads the new one's).</summary>
+        private void UnloadWords()
+        {
+            mDictionary = null;
+            mBonusWords = new System.Collections.Generic.List<string>();
+            mDefinitionator = null;
+            GC.Collect();
+        }
+
         /// <summary>
-        /// Port addition: the Options page's language link. Switches to the next language (English, Spanish),
+        /// Port addition: the Options page's language link. Switches to the next language (Localization.LANGUAGES),
         /// keeps it, and reloads the texts and word lists. A game in progress goes on with the new words.
         /// </summary>
         public void ChangeLanguage()
@@ -346,16 +328,20 @@ namespace Sexy
             // The found collection words are kept per language: write the old language's first.
             mCollectionator.Save();
             Constants.Language = Localization.LANGUAGES[(Localization.CurrentIndex() + 1) % Localization.LANGUAGES.Length];
+            UnloadWords();
             if (!LoadWords())
             {
+                // The new language's lists are missing: back to the old one's.
                 Constants.Language = anOld;
+                LoadWords();
                 return;
             }
             RegistryWriteInteger("Language", (int)Constants.Language);
             Localization.LoadStrings(this);
-            // Lex's voice: the PC Spanish version's clips are in es.lproj/sounds.
+            // Lex's voice: the PC versions' own clips are in <lang>.lproj/sounds.
             mResourceManager.ReloadLocalizedSounds();
             mCollectionator.ReloadBooks();
+            ((MenuTabWidget)mScreens[SCREEN_MENU_TABS]).UpdateCompletion();
             foreach (InterfaceWidget aScreen in mScreens)
             {
                 if (aScreen is WordBookWidget aBook && aBook.mContinueButton != null)

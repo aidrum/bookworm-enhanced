@@ -178,8 +178,8 @@ namespace Sexy
             // Port: the switches' ON / OFF art is English; translated, their names are drawn as text.
             foreach (Switch aSwitch in new[] { mHintsSwitch, mDefinitionsSwitch, mConfirmScrambleSwitch, mLandscapeBooksSwitch, mSubmitByDraggingSwitch, mCheckForUpdatesSwitch })
             {
-                aSwitch.mOnText = Localization.IsSpanish ? "SÍ" : null;
-                aSwitch.mOffText = Localization.IsSpanish ? "NO" : null;
+                aSwitch.mOnText = Localization.IsTranslated ? SexyAppBase.Loc("ON") : null;
+                aSwitch.mOffText = Localization.IsTranslated ? SexyAppBase.Loc("OFF") : null;
                 aSwitch.MarkDirty();
             }
             SetLabel(mTexturesLabel, "Texture Quality");
@@ -334,8 +334,8 @@ namespace Sexy
             mMusicSlider.Layout(0x1201, mMusicLabel, 0, aGap, 0, 0);
             mHintsSwitch.Layout(0x2200, mMusicSlider, 0, aGap, 0, 0);
             mDefinitionsSwitch.Layout(0x2200, mHintsSwitch, 0, aGap, 0, 0);
-            // Port: the PC Spanish version has no definitions (HAS_DEFINITIONS false), so neither has its switch.
-            bool aDefinitions = !Localization.IsSpanish;
+            // Port: only English has definitions (the PC versions' HAS_DEFINITIONS is false), so only it has the switch.
+            bool aDefinitions = !Localization.IsTranslated;
             mDefinitionsSwitch.SetVisible(aDefinitions);
             mDefinitionsLabel.SetVisible(aDefinitions);
             mConfirmScrambleSwitch.Layout(0x2200, aDefinitions ? mDefinitionsSwitch : mHintsSwitch, 0, aGap, 0, 0);

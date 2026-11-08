@@ -68,8 +68,8 @@ namespace Sexy
         /// <summary>The letter's weight in the random letter table (0xccce8 indexed by the letter = 0xccdec).</summary>
         private static int LetterWeight(Piece thePiece)
         {
-            // Port: Spanish takes the PC Spanish version's letter odds.
-            int[] aWeights = Localization.IsSpanish ? Localization.SPANISH_LETTER_WEIGHTS : LETTER_WEIGHTS;
+            // Port: another language takes its PC version's letter odds.
+            int[] aWeights = Localization.LetterWeights ?? LETTER_WEIGHTS;
             int anIndex = thePiece.mLetter - 'A';
             return anIndex >= 0 && anIndex < aWeights.Length ? aWeights[anIndex] : 0;
         }

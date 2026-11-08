@@ -123,15 +123,17 @@ namespace Sexy
                 }
                 g.PopState();
             }
-            // Port (Spanish): the frame's right end (the pillar with "LVL") is its left end mirrored, "NV" drawn on it.
-            bool aSpanish = Localization.IsSpanish;
+            // Port (translated): the frame's right end (the pillar with "LVL") is its left end mirrored, the language's
+            // label ("NV", "NIV"...) drawn on it; a language that keeps "LVL" (German) keeps the art.
+            string aLabel = SexyAppBase.Loc("LVL");
+            bool aRelabel = Localization.IsTranslated && aLabel != "LVL";
             int aFrameX = aPos.At(0x158);
             int aFrameY = aPos.At(0x15c);
             if (aGrowth > 0)
             {
-                DrawStretchedMiddle(g, aFrame, aFrameX, aFrameY, aPos.mWideBarWidth, aSpanish);
+                DrawStretchedMiddle(g, aFrame, aFrameX, aFrameY, aPos.mWideBarWidth, aRelabel);
             }
-            else if (aSpanish)
+            else if (aRelabel)
             {
                 int aHalf = (aFrame.mWidth + 1) / 2;
                 TRect aLeftHalf = new TRect(0, 0, aHalf, aFrame.mHeight);
@@ -142,26 +144,26 @@ namespace Sexy
             {
                 g.DrawImage(aFrame, aFrameX, aFrameY);
             }
-            if (aSpanish)
+            if (aRelabel)
             {
-                DrawLevelLabel(g, aFrame, aFrameX + aFrame.mWidth + aGrowth, aFrameY);
+                DrawLevelLabel(g, aFrame, aFrameX + aFrame.mWidth + aGrowth, aFrameY, aLabel);
             }
         }
 
         /// <summary>
-        /// Port (Spanish): "NV" where the frame's "LVL" was, in its lettering: the outlined Arial Rounded (its fill a
+        /// Port (translated): theLabel ("NV" in Spanish) where the frame's "LVL" was, in its lettering: the outlined Arial Rounded (its fill a
         /// layer of its own to colour; the large outlined font's iPad Retina one is a single layer), lime (grey when
         /// greyed) brighter toward the bottom, its capitals as high and centred as LVL's. The places are the iPad
         /// Retina frame's (1284 x 268), from its right edge (theRight: the pillar stays at the end when widened).
         /// </summary>
-        private void DrawLevelLabel(Graphics g, Image theFrame, int theRight, int theY)
+        private void DrawLevelLabel(Graphics g, Image theFrame, int theRight, int theY, string theLabel)
         {
             float aUnit = theFrame.mHeight / 268f;
             int aCenterX = theRight - (int)System.Math.Round((1284 - 1213.5f) * aUnit);
             int aCenterY = theY + (int)System.Math.Round(102 * aUnit);
             Color aTop = mGreyed ? LEVEL_LABEL_GREY_TOP : LEVEL_LABEL_TOP;
             Color aBottom = mGreyed ? LEVEL_LABEL_GREY_BOTTOM : LEVEL_LABEL_BOTTOM;
-            GradientText.DrawFitted(g, Res.FONT_ARIAL_MEDIUM_OUTLINED, new[] { "NV" }, aCenterX, aCenterY,
+            GradientText.DrawFitted(g, Res.FONT_ARIAL_MEDIUM_OUTLINED, new[] { theLabel }, aCenterX, aCenterY,
                 (int)System.Math.Round(71 * aUnit), (int)System.Math.Round(27 * aUnit), aTop, aBottom);
         }
 
@@ -187,7 +189,7 @@ namespace Sexy
             g.DrawImage(theImage, new TRect(theX + anEnd, theY, theWidth - anEnd * 2, aHeight), new TRect(anEnd, 0, aMiddle, aHeight));
             if (theMirrorLeft)
             {
-                // Port (Spanish): the left end mirrored, in place of the right end's "LVL".
+                // Port (translated): the left end mirrored, in place of the right end's "LVL".
                 g.DrawImageMirror(theImage, theX + theWidth - anEnd, theY, new TRect(0, 0, anEnd, aHeight));
                 return;
             }

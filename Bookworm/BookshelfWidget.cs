@@ -149,7 +149,7 @@ namespace Sexy
             g.DrawImage(AtlasResourceBase.IMAGE_GROUP7_05, mSignPos.mX, mSignPos.mY);
         }
 
-        /// <summary>Port (Spanish): the bonus list square without its English text (AtlasResourceBase localized art).</summary>
+        /// <summary>Port (translated): the bonus list square without its English text (AtlasResourceBase localized art).</summary>
         private Image mBlankBonusList;
 
         private bool mBlankBonusListLoaded;
@@ -160,18 +160,18 @@ namespace Sexy
         private static readonly Color BONUS_LIST_BOTTOM = new Color(222, 160, 15, 255);
 
         /// <summary>
-        /// IMAGE_GROUP7_04, the "BONUS BOOK LIST" square over the collection shelf. Port: in Spanish, the same
-        /// square without its text (made at the atlas's scale) with "LIBROS BONUS" drawn over it.
+        /// IMAGE_GROUP7_04, the "BONUS BOOK LIST" square over the collection shelf. Port: translated, the same
+        /// square without its text (made at the atlas's scale) with its title ("LIBROS BONUS") drawn over it.
         /// </summary>
         private void DrawBonusList(Graphics g)
         {
             Image anImage = AtlasResourceBase.IMAGE_GROUP7_04;
-            if (Localization.IsSpanish && !mBlankBonusListLoaded)
+            if (Localization.IsTranslated && !mBlankBonusListLoaded)
             {
                 mBlankBonusList = AtlasResourceBase.GetLocalizedImage(mApp, anImage.mWidth / 80, AtlasResourceBase.LOCALIZED_BLANK_BONUS_LIST);
                 mBlankBonusListLoaded = true;
             }
-            if (!Localization.IsSpanish || mBlankBonusList == null)
+            if (!Localization.IsTranslated || mBlankBonusList == null)
             {
                 g.DrawImage(anImage, mShelfTopPos.mX, mShelfTopPos.mY);
                 return;
@@ -179,7 +179,7 @@ namespace Sexy
             int aWidth = anImage.mWidth;
             int aHeight = anImage.mHeight;
             g.DrawImage(mBlankBonusList, mShelfTopPos.mX, mShelfTopPos.mY, aWidth, aHeight);
-            GradientText.DrawFitted(g, Res.FONT_COOPER_OUTLINED, new[] { "LIBROS", "BONUS" }, mShelfTopPos.mX + aWidth / 2, mShelfTopPos.mY + aHeight / 2,
+            GradientText.DrawFitted(g, Res.FONT_COOPER_OUTLINED, Localization.Lines("BONUS\nBOOK LIST"), mShelfTopPos.mX + aWidth / 2, mShelfTopPos.mY + aHeight / 2,
                 aWidth * 84 / 100, aHeight * 64 / 100, BONUS_LIST_TOP, BONUS_LIST_BOTTOM, GradientText.BANNER_OUTLINE);
         }
 
@@ -191,18 +191,18 @@ namespace Sexy
         private static readonly Color COMPLETE_OUTLINE = new Color(40, 70, 0, 255);
 
         /// <summary>
-        /// IMAGE_GROUP31_24, the green "Complete" under the percent, at (theX, theY). Port: in Spanish, "Completado"
-        /// in the same green, centred on it (a little wider than the art if need be: the sign is wider).
+        /// IMAGE_GROUP31_24, the green "Complete" under the percent, at (theX, theY). Port: translated, its word
+        /// ("Completado") in the same green, centred on it (a little wider than the art if need be: the sign is wider).
         /// </summary>
         private static void DrawCompleteText(Graphics g, int theX, int theY)
         {
             Image anImage = AtlasResourceBase.IMAGE_GROUP31_24;
-            if (!Localization.IsSpanish)
+            if (!Localization.IsTranslated)
             {
                 g.DrawImage(anImage, theX, theY);
                 return;
             }
-            GradientText.DrawFitted(g, Res.FONT_COOPER_OUTLINED, new[] { "Completado" }, theX + anImage.mWidth / 2, theY + anImage.mHeight / 2,
+            GradientText.DrawFitted(g, Res.FONT_COOPER_OUTLINED, new[] { SexyAppBase.Loc("Complete") }, theX + anImage.mWidth / 2, theY + anImage.mHeight / 2,
                 anImage.mWidth * 110 / 100, anImage.mHeight * 70 / 100, COMPLETE_TOP, COMPLETE_BOTTOM, COMPLETE_OUTLINE);
         }
 
@@ -213,19 +213,19 @@ namespace Sexy
         /// IMAGE_GROUP13_03 (0x128) and IMAGE_GROUP13_04 (0x130); on iPhone 5 (long side 1136) IMAGE_GROUP13_02
         /// (0x128) and IMAGE_GROUP13_01 (0x130). Port: any iPhone-family screen wider than 960 gets the latter.
         /// </summary>
-        /// <summary>Port (Spanish): the history banner without its English title (AtlasResourceBase localized art).</summary>
+        /// <summary>Port (translated): the history banner without its English title (AtlasResourceBase localized art).</summary>
         private Image mBlankHistoryBanner;
 
         private bool mBlankHistoryBannerLoaded;
 
         /// <summary>
-        /// IMAGE_GROUP31_02, the "Word History" banner ("More History" on iPad Retina). Port: in Spanish, the
+        /// IMAGE_GROUP31_02, the "Word History" banner ("More History" on iPad Retina). Port: translated, the
         /// same banner without its text (made at the atlas's scale) with "Historial" drawn over it.
         /// </summary>
         private void DrawHistoryBanner(Graphics g)
         {
             Image anImage = AtlasResourceBase.IMAGE_GROUP31_02;
-            if (!Localization.IsSpanish)
+            if (!Localization.IsTranslated)
             {
                 g.DrawImage(anImage, mShelfEndPos.mX, mShelfEndPos.mY);
                 return;

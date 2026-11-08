@@ -25,12 +25,13 @@ namespace Sexy
         public string mNextBonusWord = "";
 
         /// <summary>
-        /// Port: the bonus word and the next one in the other language, picked along with mBonusWord and
-        /// mNextBonusWord and swapped with them when the language changes, so changing it can't re-roll them.
+        /// Port: the bonus word and the next one of the languages played before ('|'-separated, by
+        /// Localization.LANGUAGES index), swapped in when the language changes back (a missing or dropped one is
+        /// picked then). The current language's slot is stale: mBonusWord / mNextBonusWord hold it.
         /// </summary>
-        public string mOtherBonusWord = "";
+        public string mLanguageBonusWords = "";
 
-        public string mOtherNextBonusWord = "";
+        public string mLanguageNextBonusWords = "";
 
         /// <summary>Port: the language (Localization.LANGUAGES index) mBonusWord and mNextBonusWord are in.</summary>
         public int mBonusWordLanguage;
@@ -55,14 +56,14 @@ namespace Sexy
         {
             SyncBonusWordLanguage();
             int aLength = BONUS_WORD_LENGTHS[System.Math.Min(mBonusWordsPicked, 9)];
-            string aWord = PickBonusWord(mApp.mBonusWords, aLength, mNextBonusWord, out uint aRoll);
+            string aWord = PickBonusWord(mApp.mBonusWords, aLength, mNextBonusWord, out _);
             if (aWord != null)
             {
                 mNextBonusWord = aWord;
                 mBonusWordsPicked++;
-                // Port: the other language's word of the same length is picked with it, by the same random number,
-                // so the random sequence (and with it the letters) is the original's.
-                mOtherNextBonusWord = PickBonusWordByRoll(mApp.GetBonusWords(OtherLanguage()), aLength, mOtherNextBonusWord, aRoll) ?? "";
+                // Port: only the current language's words are loaded, so the other languages' next words are
+                // dropped; SyncBonusWordLanguage picks one of this length (not by gRand) if the language changes.
+                mLanguageNextBonusWords = "";
             }
         }
 
@@ -96,15 +97,29 @@ namespace Sexy
         /// game's random sequence is not disturbed).</summary>
         private static readonly System.Random gBonusFillRand = new System.Random();
 
-        /// <summary>Port: the index (in Localization.LANGUAGES) of the language other than the bonus words' one.</summary>
-        private int OtherLanguage()
+        /// <summary>Port: language theIndex's word in theSlots (mLanguageBonusWords or mLanguageNextBonusWords), or "".</summary>
+        private static string GetBonusSlot(string theSlots, int theIndex)
         {
-            return (mBonusWordLanguage + 1) % Localization.LANGUAGES.Length;
+            string[] aWords = theSlots.Split('|');
+            return theIndex < aWords.Length ? aWords[theIndex] : "";
+        }
+
+        /// <summary>Port: theSlots with language theIndex's word set to theWord.</summary>
+        private static string SetBonusSlot(string theSlots, int theIndex, string theWord)
+        {
+            List<string> aWords = new List<string>(theSlots.Split('|'));
+            while (aWords.Count <= theIndex)
+            {
+                aWords.Add("");
+            }
+            aWords[theIndex] = theWord;
+            return string.Join("|", aWords);
         }
 
         /// <summary>
-        /// Port: when the language is no longer the bonus words', the other language's ones are swapped in. One
-        /// missing there (a game saved before both were picked) is picked now, as long as its counterpart.
+        /// Port: when the language is no longer the bonus words', the old language's are stored in their slots and
+        /// the new one's swapped in. One missing there (a game saved before it was picked) is picked now, as long
+        /// as the old one.
         /// </summary>
         public void SyncBonusWordLanguage()
         {
@@ -113,16 +128,20 @@ namespace Sexy
             {
                 return;
             }
-            (mBonusWord, mOtherBonusWord) = (mOtherBonusWord, mBonusWord);
-            (mNextBonusWord, mOtherNextBonusWord) = (mOtherNextBonusWord, mNextBonusWord);
+            string anOldWord = mBonusWord;
+            string anOldNext = mNextBonusWord;
+            mLanguageBonusWords = SetBonusSlot(mLanguageBonusWords, mBonusWordLanguage, anOldWord);
+            mLanguageNextBonusWords = SetBonusSlot(mLanguageNextBonusWords, mBonusWordLanguage, anOldNext);
+            mBonusWord = GetBonusSlot(mLanguageBonusWords, aLanguage);
+            mNextBonusWord = GetBonusSlot(mLanguageNextBonusWords, aLanguage);
             mBonusWordLanguage = aLanguage;
-            if (mBonusWord.Length == 0 && mOtherBonusWord.Length != 0)
+            if (mBonusWord.Length == 0 && anOldWord.Length != 0)
             {
-                mBonusWord = PickBonusWordByRoll(mApp.mBonusWords, mOtherBonusWord.Length, "", (uint)gBonusFillRand.Next()) ?? "";
+                mBonusWord = PickBonusWordByRoll(mApp.mBonusWords, anOldWord.Length, "", (uint)gBonusFillRand.Next()) ?? "";
             }
-            if (mNextBonusWord.Length == 0 && mOtherNextBonusWord.Length != 0)
+            if (mNextBonusWord.Length == 0 && anOldNext.Length != 0)
             {
-                mNextBonusWord = PickBonusWordByRoll(mApp.mBonusWords, mOtherNextBonusWord.Length, mBonusWord, (uint)gBonusFillRand.Next()) ?? "";
+                mNextBonusWord = PickBonusWordByRoll(mApp.mBonusWords, anOldNext.Length, mBonusWord, (uint)gBonusFillRand.Next()) ?? "";
             }
         }
 
@@ -144,7 +163,7 @@ namespace Sexy
             {
                 PickBonusWord();
                 mBonusWord = "";
-                mOtherBonusWord = "";
+                mLanguageBonusWords = "";
             }
         }
 
