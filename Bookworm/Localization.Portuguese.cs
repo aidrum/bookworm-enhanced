@@ -125,7 +125,7 @@ namespace Sexy
             { "You've opened a new Collection Book!", "Você abriu um novo livro de coleção!" },
             { "You've spelled every word in this Collection Book!", "Você formou todas as palavras deste livro de coleção!" },
             { "You've spelled a new Collection Word!", "Você formou uma nova palavra de coleção!" },
-            { "RECENT {0} LETTER WORDS", "PALAVRAS RECENTES DE {0} LETRAS" },
+            { "RECENT {0} LETTER WORDS", "P. RECENTES DE {0} LETRAS" },
             { "Tap the word bubble or the last letter tile to submit your word!",
                 "Toque no balão da palavra ou na última letra para enviar a sua palavra!" },
             { "Shake your device to scramble all of your tiles!", "Toque em mim ou sacuda o aparelho para embaralhar todas as letras!" },
