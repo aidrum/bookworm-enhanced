@@ -353,7 +353,7 @@ namespace Sexy
 
         /// <summary>Port (performance, translated): every label ("3 letras" to "12 letras") drawn once into one strip
         /// laid out as the art's cels, then each blitted from it; built again for other art (another texture set)
-        /// or when the device lost it.</summary>
+        /// or another language.</summary>
         private static MemoryImage sTranslatedLabels;
 
         private static Image sTranslatedLabelsArt;
@@ -363,8 +363,7 @@ namespace Sexy
 
         private static MemoryImage GetTranslatedLabels(Image theArt)
         {
-            if (sTranslatedLabels != null && ReferenceEquals(sTranslatedLabelsArt, theArt) && sTranslatedLabelsLanguage == Constants.Language &&
-                !sTranslatedLabels.RenderTarget.IsContentLost)
+            if (sTranslatedLabels != null && ReferenceEquals(sTranslatedLabelsArt, theArt) && sTranslatedLabelsLanguage == Constants.Language)
             {
                 return sTranslatedLabels;
             }

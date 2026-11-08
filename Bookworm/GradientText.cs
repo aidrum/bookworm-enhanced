@@ -29,9 +29,8 @@ namespace Sexy
             }
             int aLineHeight = theLineSpacing > 0 ? theLineSpacing : theFont.GetLineSpacing();
             CacheKey aKey = new CacheKey(theFont, string.Join("\n", theLines), theTop, theBottom, theOutline, aLineHeight);
-            if (!sCache.TryGetValue(aKey, out CacheEntry anEntry) || anEntry.mImage.RenderTarget.IsContentLost)
+            if (!sCache.TryGetValue(aKey, out CacheEntry anEntry))
             {
-                anEntry?.mImage.Dispose();
                 anEntry = Build(theFont, theLines, theTop, theBottom, theOutline, aLineHeight);
                 sCache[aKey] = anEntry;
             }
