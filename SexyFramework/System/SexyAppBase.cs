@@ -966,6 +966,11 @@ namespace Sexy
         {
         }
 
+        /// <summary>Port addition: a TV remote's Menu button (Main.MenuRequested).</summary>
+        public virtual void MenuButtonPress()
+        {
+        }
+
         public virtual bool BackButtonPress()
         {
             if (!mLoadingThreadCompleted)

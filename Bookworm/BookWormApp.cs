@@ -923,6 +923,12 @@ namespace Sexy
             mNavigator?.Hide();
         }
 
+        /// <summary>Port addition (Android TV): the remote's Menu button scrambles while playing.</summary>
+        public override void MenuButtonPress()
+        {
+            mBoard?.MenuScramble();
+        }
+
         /// <summary>Port addition: back (Escape, B, Back, Start) closes a book page first (MenuNavigator.BackPressed).</summary>
         public override bool BackButtonPress()
         {

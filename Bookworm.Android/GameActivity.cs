@@ -119,6 +119,65 @@ namespace Bookworm.Android
             }
         }
 
+        /// <summary>
+        /// Notes whether each navigation key comes from a TV remote (Sexy.Main.TvRemoteInput: only a remote can
+        /// select Lex, the scramble button), and turns a remote's Menu button into a scramble.
+        /// </summary>
+        public override bool DispatchKeyEvent(KeyEvent e)
+        {
+            if (e.KeyCode == Keycode.Menu && IsTvRemote(e))
+            {
+                if (e.Action == KeyEventActions.Down && e.RepeatCount == 0)
+                {
+                    Sexy.Main.TvRemoteInput = true;
+                    Sexy.Main.MenuRequested = true;
+                }
+                return true;
+            }
+            if (e.Action == KeyEventActions.Down && IsNavigationKey(e.KeyCode))
+            {
+                Sexy.Main.TvRemoteInput = IsTvRemote(e);
+            }
+            return base.DispatchKeyEvent(e);
+        }
+
+        private static bool IsNavigationKey(Keycode theKey)
+        {
+            switch (theKey)
+            {
+            case Keycode.DpadUp:
+            case Keycode.DpadDown:
+            case Keycode.DpadLeft:
+            case Keycode.DpadRight:
+            case Keycode.DpadCenter:
+            case Keycode.Enter:
+            case Keycode.NumpadEnter:
+            case Keycode.ButtonA:
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// A TV remote: a real device (not the on-screen keyboard) that is neither a controller (gamepad or
+        /// joystick) nor a full keyboard.
+        /// </summary>
+        private static bool IsTvRemote(KeyEvent e)
+        {
+            InputDevice aDevice = e.Device;
+            if (aDevice == null || aDevice.IsVirtual)
+            {
+                return false;
+            }
+            InputSourceType aSources = aDevice.Sources;
+            if ((aSources & InputSourceType.Gamepad) == InputSourceType.Gamepad ||
+                (aSources & InputSourceType.Joystick) == InputSourceType.Joystick)
+            {
+                return false;
+            }
+            return aDevice.KeyboardType != InputKeyboardType.Alphabetic;
+        }
+
         protected override void OnResume()
         {
             base.OnResume();

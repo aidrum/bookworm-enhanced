@@ -48,6 +48,15 @@ namespace Sexy
         public static volatile bool BackRequested;
 
         /// <summary>
+        /// Set by the platform (Android TV): whether the last navigation key came from a TV remote rather than a
+        /// keyboard or a controller.
+        /// </summary>
+        public static volatile bool TvRemoteInput;
+
+        /// <summary>Set by the platform (a TV remote's Menu button); handled on the next update (SexyAppBase.MenuButtonPress).</summary>
+        public static volatile bool MenuRequested;
+
+        /// <summary>
         /// Port: accelerometer samples from the platform (Android's sensor; the iOS app got them from
         /// UIAccelerometer), in iOS units (g, with UIAcceleration's signs) and seconds. Handed to
         /// SexyAppBase.AccelerometerDidAccelerate on the next update, on the game thread (shaking scrambles).
@@ -625,6 +634,11 @@ namespace Sexy
             {
                 BackRequested = false;
                 app.BackButtonPress();
+            }
+            if (MenuRequested)
+            {
+                MenuRequested = false;
+                app.MenuButtonPress();
             }
             // Port addition (controller): the game's turn with the pad (the board's selector).
             app.GamePadUpdate(pad, previousGamepadState);

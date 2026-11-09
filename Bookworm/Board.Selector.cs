@@ -10,6 +10,9 @@ namespace Sexy
     /// input (BookWormApp.PointerInputUsed).
     /// Keyboard: arrows/WASD move, Space/Enter taps, Backspace drops the last letter, X drops the word, Z scrambles.
     /// Pad: D-pad/left stick move, A taps, B drops the last letter, X drops the word, Y scrambles.
+    /// TV remote (Android TV, Main.TvRemoteInput): the arrows can also take the selector onto Lex, the scramble
+    /// button (up past the top row, or left past the first column in the wide layout where he sits beside the
+    /// board), and OK there scrambles; the remote's Menu button scrambles too. Only a remote can select him.
     /// </summary>
     public partial class Board
     {
@@ -24,6 +27,9 @@ namespace Sexy
         /// one of an odd column at 2 * row, so -1 (top) to 2 * (ROWS - 1) (bottom).
         /// </summary>
         private int mSelectorHalf = (ROWS / 2) * 2;
+
+        /// <summary>The selector is on Lex (TV remote only); its grid place is kept for coming back.</summary>
+        private bool mSelectorOnLex;
 
         private const int SELECTOR_MIN_HALF = -1;
 
@@ -82,23 +88,28 @@ namespace Sexy
                 base.KeyDown(theKey);
                 return;
             }
+            bool aRemote = Main.TvRemoteInput;
+            if (!aRemote)
+            {
+                LeaveLex();
+            }
             switch (theKey)
             {
             case KeyCode.Left:
             case (KeyCode)'A':
-                SelectorMove(DIR_LEFT);
+                SelectorMove(DIR_LEFT, aRemote);
                 return;
             case KeyCode.Right:
             case (KeyCode)'D':
-                SelectorMove(DIR_RIGHT);
+                SelectorMove(DIR_RIGHT, aRemote);
                 return;
             case KeyCode.Up:
             case (KeyCode)'W':
-                SelectorMove(DIR_UP);
+                SelectorMove(DIR_UP, aRemote);
                 return;
             case KeyCode.Down:
             case (KeyCode)'S':
-                SelectorMove(DIR_DOWN);
+                SelectorMove(DIR_DOWN, aRemote);
                 return;
             case KeyCode.Space:
             case KeyCode.Return:
@@ -127,6 +138,12 @@ namespace Sexy
                 return false;
             }
             int aDir = GetPadDir(thePad);
+            // A controller can't select Lex: using one takes the selector back to the grid.
+            if (aDir != 0 || thePad.Buttons.A == ButtonState.Pressed || thePad.Buttons.B == ButtonState.Pressed ||
+                thePad.Buttons.X == ButtonState.Pressed || thePad.Buttons.Y == ButtonState.Pressed)
+            {
+                LeaveLex();
+            }
             long aNow = System.Environment.TickCount64;
             if (aDir == 0)
             {
@@ -207,9 +224,47 @@ namespace Sexy
                 return false;
             }
             mSelectorVisible = true;
+            LeaveLex();
             SnapSelectorToLast();
             MarkDirty();
             return true;
+        }
+
+        /// <summary>Whether Lex shows as selected (he glows: Lex.DrawLex).</summary>
+        public bool IsLexSelected()
+        {
+            return mSelectorOnLex && mSelectorVisible && mState == STATE_PLAYING && mPauseFlags == 0;
+        }
+
+        /// <summary>Takes the selector onto Lex (a TV remote's arrow past the grid's edge on his side).</summary>
+        private void EnterLex()
+        {
+            mSelectorOnLex = true;
+            MarkDirty();
+            mApp.mLex.MarkDirty();
+        }
+
+        /// <summary>Takes the selector off Lex, back to its place on the grid.</summary>
+        private void LeaveLex()
+        {
+            if (!mSelectorOnLex)
+            {
+                return;
+            }
+            mSelectorOnLex = false;
+            MarkDirty();
+            mApp.mLex.MarkDirty();
+        }
+
+        /// <summary>A TV remote's Menu button: scrambles (as Z or Y do) while playing.</summary>
+        public void MenuScramble()
+        {
+            if (!CanUseSelector())
+            {
+                return;
+            }
+            ShowSelector();
+            RequestScramble();
         }
 
         /// <summary>Puts the selector on the word's last tile.</summary>
@@ -245,17 +300,32 @@ namespace Sexy
         /// <summary>
         /// Moves the selector (the first input only shows it). Sideways keeps the height, so the selector may stay
         /// above or below a shorter column at the grid's ends; up and down go to the next tile that way, or to
-        /// the grid's top or bottom edge past the column's last tile.
+        /// the grid's top or bottom edge past the column's last tile. With a TV remote (theRemote), going past the
+        /// grid on Lex's side (above it, or left of it in the wide layout) selects Lex; the other way comes back.
         /// </summary>
-        private void SelectorMove(int theDir)
+        private void SelectorMove(int theDir, bool theRemote = false)
         {
             if (ShowSelector())
             {
                 return;
             }
+            bool aWide = mApp.mScreenPos.mWideGame;
+            if (mSelectorOnLex)
+            {
+                if (theDir == (aWide ? DIR_RIGHT : DIR_DOWN))
+                {
+                    LeaveLex();
+                }
+                return;
+            }
             switch (theDir)
             {
             case DIR_LEFT:
+                if (theRemote && aWide && mSelectorCol == 0)
+                {
+                    EnterLex();
+                    return;
+                }
                 mSelectorCol = System.Math.Max(0, mSelectorCol - 1);
                 break;
             case DIR_RIGHT:
@@ -265,6 +335,11 @@ namespace Sexy
             {
                 int aStep = theDir == DIR_UP ? -1 : 1;
                 int aHalf = mSelectorHalf + (IsTileHalf(mSelectorCol, mSelectorHalf) ? aStep * 2 : aStep);
+                if (theRemote && !aWide && aHalf < SELECTOR_MIN_HALF)
+                {
+                    EnterLex();
+                    return;
+                }
                 // Past the grid's top or bottom it stops at the edge, maybe half a step off this column's tiles.
                 mSelectorHalf = System.Math.Clamp(aHalf, SELECTOR_MIN_HALF, SELECTOR_MAX_HALF);
                 break;
@@ -293,6 +368,11 @@ namespace Sexy
         {
             if (ShowSelector())
             {
+                return;
+            }
+            if (mSelectorOnLex)
+            {
+                RequestScramble();
                 return;
             }
             Piece aPiece = GetSelectorPiece();
@@ -336,7 +416,7 @@ namespace Sexy
         /// <summary>The selector over the tiles (DrawPieces), centred on its cell.</summary>
         private void DrawSelector(Graphics g)
         {
-            if (!mSelectorVisible || mState != STATE_PLAYING || mPauseFlags != 0)
+            if (!mSelectorVisible || mSelectorOnLex || mState != STATE_PLAYING || mPauseFlags != 0)
             {
                 return;
             }
