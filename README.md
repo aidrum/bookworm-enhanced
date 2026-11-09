@@ -34,12 +34,36 @@ The latest release for each platform. Newer automatic builds are on the [Release
 | Linux (x64, AppImage) | [Download](../../releases/latest/download/Bookworm-x86_64.AppImage) | Make it executable, then run it. |
 | Linux (x64, .tar.gz) | [Download](../../releases/latest/download/Bookworm-linux-x64.tar.gz) | Extract, then run `Bookworm`. |
 
+Also check out the sibling project: [Peggle Enhanced](https://github.com/aidrum/peggle-enhanced/)!
+
+## Keyboard/Gamepad Controls
+
+### UI
+
+| Action | Keyboard | Controller |
+|---|---|---|
+| Move/Scroll | WASD/Arrows | Left Stick/D-Pad |
+| Switch tabs | Q/E | LB/RB/LT/RT |
+| Select | Enter/Space | A |
+| Move | WASD/Arrows | Left Stick/D-Pad |
+| Back | Escape | B |
+
+### In-game
+
+| Action | Keyboard | Controller |
+|---|---|---|
+| Move Selector | WASD/Arrows | Left Stick/D-Pad |
+| Select letter | Space/Enter | A |
+| Deselect word | X | Y |
+| Deselect last letter | None | B |
+| Scramble | Z | X |
+| Back to menu | Escape | Start |
 
 ## FAQ
 
 - **Will this get any more updates?**
 
-  If we think of cool stuff to add, likely. If we have to fix bugs, definitely. More languages coming soon?
+  If we think of cool stuff to add, likely. If we have to fix bugs, definitely.
 
 - **Will any other PopCap Games get the same treatment?**
 
@@ -54,11 +78,6 @@ We already did Peggle, we'll probably not do more. Most other PopCap Games alrea
   - Redmi Note 13 Pro 5G (Android 13): Great performance with high resolution (iPad Retina) texture settings.
   - Huawei MediaPad T3 10 (Android 7): Great performance with medium resolution (iPhone Retina/iPad) texture settings.
   - Samsung Galaxy J2 Prime (Android 6): Great performance with medium resolution (iPhone Retina/iPad) texture settings.
-
-- **Does it support controllers?**
-
-  Not yet, might be implemented in the future if there's enough demand. There's the GBA version as a reference for how it would control.
-
 
 - **Dynamic music??**
 
